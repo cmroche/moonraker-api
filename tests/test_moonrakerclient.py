@@ -34,6 +34,8 @@ async def test_api_request(aiohttp_server, moonraker):
     server = await create_moonraker_service(aiohttp_server)
 
     task = asyncio.create_task(moonraker.connect())
+    # TODO: This doesn't work because we don't handle server responses yet
+    # it just times out ...
     response = await moonraker.printer_administration.restart()
     await moonraker.disconnect()
     await task

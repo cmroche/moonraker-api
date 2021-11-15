@@ -5,6 +5,7 @@
 # This file may be distributed under the terms of the GNU GPLv3 license
 
 import asyncio
+from asyncio.tasks import FIRST_COMPLETED
 import logging
 import json
 
@@ -16,6 +17,7 @@ from typing import Any, Coroutine, List
 from aiohttp.client_ws import ClientWebSocketResponse
 
 from moonraker_api.const import (
+    WEBSOCKET_RETRY_DELAY,
     WEBSOCKET_STATE_CONNECTED,
     WEBSOCKET_STATE_CONNECTING,
     WEBSOCKET_STATE_DISCONNECTED,
@@ -93,7 +95,8 @@ class WebsocketClient:
         self.host = host
         self.port = port
         self._loop = loop or asyncio.get_event_loop_policy().get_event_loop()
-        self.client_session = None
+
+        self._ws = None
 
         self._task = None
         self._state = None
@@ -186,32 +189,37 @@ class WebsocketClient:
 
     async def loop_send(self, client: ClientWebSocketResponse) -> None:
         """Run the websocket request queue"""
-        async for request in self._requests_pending:
+        while self.state not in [WEBSOCKET_STATE_STOPPED, WEBSOCKET_STATE_DISCONNECTED]:
+            request = await self._requests_pending.get()
             request_str = json.dumps(request.request)
-            _LOGGER.debug("Sending message %s", json.dumps(request))
+            _LOGGER.debug("Sending message %s", request_str)
             await client.send_str(request_str)
+            self._requests_pending.task_done()
 
     async def connect(self):
         """Start the websocket connection."""
-        self._retries = 0
-        if not self.client_session:
-            self.client_session = ClientSession()
+        session = ClientSession()
 
         while self.state != WEBSOCKET_STATE_STOPPING:
             self.state = WEBSOCKET_STATE_CONNECTING
             try:
-                async with self.client_session.ws_connect(
-                    self._build_websocket_uri()
-                ) as ws:
-
+                async with session.ws_connect(self._build_websocket_uri()) as ws:
                     self.state = WEBSOCKET_STATE_CONNECTED
                     ws.send_json(self._build_websocket_request("printer.objects.list"))
-                    self._task = asyncio.gather(
-                        self._loop.create_task(self.loop_recv(ws)),
-                        self._loop.create_task(self.loop_send(ws)),
+                    done, unfinished = await asyncio.wait(
+                        (
+                            self._loop.create_task(self.loop_recv(ws)),
+                            self._loop.create_task(self.loop_send(ws)),
+                        ),
+                        return_when=FIRST_COMPLETED,
                     )
 
-                    await self._task
+                    for task in unfinished:
+                        task.cancel()
+
+                    # Raise exceptions
+                    (future,) = done
+                    future.result()
 
             except ClientResponseError as error:
                 _LOGGER.warning("Websocket request error: %s", error)
@@ -222,16 +230,16 @@ class WebsocketClient:
             except Exception as error:  # pylint: disable=broad-except
                 _LOGGER.error("Websocket unknown error: %s", error)
 
-            self._task.cancel()
-
             # Stop was requested, do not try to reconnect
             if self.state == WEBSOCKET_STATE_STOPPING:
                 self.state = WEBSOCKET_STATE_STOPPED
+                break
             else:
                 self.state = WEBSOCKET_STATE_DISCONNECTED
+                await asyncio.sleep(WEBSOCKET_RETRY_DELAY)
 
     async def disconnect(self):
         """Stop the websocket connection."""
         self.state = WEBSOCKET_STATE_STOPPING
-        if self._task:
-            await self._task
+        if self._ws:
+            await self._ws.close()
