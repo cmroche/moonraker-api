@@ -12,7 +12,7 @@ import json
 from aiohttp import ClientSession, ClientResponseError, ClientConnectionError, WSMsgType
 from asyncio import Task
 from asyncio.events import AbstractEventLoop
-from typing import Any, Coroutine, List
+from typing import Any, Coroutine, Dict, List
 
 from aiohttp.client_ws import ClientWebSocketResponse
 
@@ -25,16 +25,7 @@ from moonraker_api.const import (
     WEBSOCKET_STATE_STOPPING,
     WEBSOCKET_STATE_STOPPED,
 )
-from moonraker_api.websockets.websocketwaitabletask import WebsocketWaitableTask
-
-from moonraker_api.const import (
-    CHANNELS_ALL,
-    WEBSOCKET_STATE_CONNECTED,
-    WEBSOCKET_STATE_CONNECTING,
-    WEBSOCKET_STATE_READY,
-    WEBSOCKET_STATE_DISCONNECTED,
-    WEBSOCKET_STATE_STOPPING,
-)
+from moonraker_api.websockets.awaitabletask import AwaitableTask, AwaitableTaskContext
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -47,12 +38,12 @@ class WebsocketStatusListener:
         """Called when the websocket state changes"""
 
 
-class WebsocketRequest(WebsocketWaitableTask):
+class WebsocketRequest(AwaitableTask):
     """Make a waitable request to the API"""
 
-    def __init__(self, request: Any, timeout: int = 120):
+    def __init__(self, req_id: int, request: Any, timeout: int = 120) -> None:
         """Initialize the request"""
-        super().__init__(timeout)
+        super().__init__(req_id, timeout)
         self.response = None
         self.request = request
 
@@ -105,7 +96,7 @@ class WebsocketClient:
         self._req_id = 0
 
         self._requests_pending = asyncio.Queue[WebsocketRequest]()
-        self._requests = []
+        self._requests: Dict[int, AwaitableTask] = {}
 
     def _task_done_callback(self, task):
         if task.exception():
@@ -143,12 +134,22 @@ class WebsocketClient:
     def _build_websocket_uri(self) -> str:
         return f"ws://{self.host}:{self.port}/websocket"
 
-    def _build_websocket_request(self, method: str, **kwargs) -> Any:
+    def _get_next_tx_id(self) -> int:
         tx_id = self._req_id
-        self._req_id = self._req_id + 1
+        self._req_id += 1
+        return tx_id
+
+    def _build_websocket_request(self, method: str, **kwargs) -> Any:
+        tx_id = self._get_next_tx_id()
         req = {"jsonrpc": "2.0", "method": method, "id": tx_id}
         if kwargs:
             req["params"] = kwargs
+        return tx_id, req
+
+    async def _request(self, method: str, **kwargs) -> Any:
+        req_id, data = self._build_websocket_request(method, **kwargs)
+        req = WebsocketRequest(req_id, data)
+        await self._requests_pending.put(req)
         return req
 
     async def request(self, method: str, **kwargs) -> Any:
@@ -158,11 +159,9 @@ class WebsocketClient:
             method (str): The api method to call
             **kwargs: Arguments to pass to the API call
         """
-        data = self._build_websocket_request(method, **kwargs)
-        req = WebsocketRequest(data)
-        self._requests.append(req)
-        await self._requests_pending.put(req)
-        return await req.result()
+        return AwaitableTaskContext[WebsocketRequest](
+            self._request(method, **kwargs), self._requests
+        )
 
     async def _loop_recv_internal(self, message) -> None:
         """Private method to allow processing if incoming messages"""
