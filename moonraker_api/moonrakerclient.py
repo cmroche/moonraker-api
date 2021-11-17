@@ -39,6 +39,7 @@ class MoonrakerClient(WebsocketClient):
         listener: MoonrakerListener,
         host: str,
         port: int = 7125,
+        retry: bool = True,
         loop: AbstractEventLoop = None,
     ) -> None:
         """Initialize the moonraker client object
@@ -50,7 +51,7 @@ class MoonrakerClient(WebsocketClient):
             loop (AbstractEventLoop, option):
                 Provide an optional asyncio loop for tasks
         """
-        WebsocketClient.__init__(self, listener, host, port, loop)
+        WebsocketClient.__init__(self, listener, host, port, retry, loop)
 
         self.modules = {"printer_administration": PrinterAdminstration(self)}
 

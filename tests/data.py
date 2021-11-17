@@ -47,7 +47,7 @@ TEST_DATA_PRINTER_INFO = {
 }
 
 TEST_DATA_SUPPORTED_MODULES = {
-    "objects": ["gcode", "toolhead", "bed_mesh", "configfile", ...]
+    "objects": ["gcode", "toolhead", "bed_mesh", "configfile"]
 }
 
 TEST_METHOD_RESPONSES = {

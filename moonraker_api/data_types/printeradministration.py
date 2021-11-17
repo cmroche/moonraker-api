@@ -41,3 +41,8 @@ class PrinterAdminstration(WebsocketDataHandler):
         """Send command to restart"""
         async with self._ws_client.request("printer.restart") as req:
             return await req.result()
+
+    async def info(self) -> Coroutine:
+        """Request printer information"""
+        async with self._ws_client.request("printer.info") as req:
+            return await req.result()

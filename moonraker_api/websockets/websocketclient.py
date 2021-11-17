@@ -79,6 +79,7 @@ class WebsocketClient:
         listener: WebsocketStatusListener,
         host: str,
         port: int = 7125,
+        retry: bool = True,
         loop: AbstractEventLoop = None,
     ) -> None:
         """Initialize the moonraker client object
@@ -87,12 +88,14 @@ class WebsocketClient:
             listener (MoonrakerListen): Event listener
             host (str): hostname or IP address of the printer
             port (int, optional): Defaults to 7125
+            retry (bool, optional): Enable reconnectry/retry on error
             loop (AbstractEventLoop, option):
                 Provide an optional asyncio loop for tasks
         """
         self.listener = listener or WebsocketStatusListener()
         self.host = host
         self.port = port
+        self.retry = retry
         self._loop = loop or asyncio.get_event_loop_policy().get_event_loop()
 
         self._ws = None
@@ -229,9 +232,8 @@ class WebsocketClient:
                     self._ws = ws
                     conn_event.set()
                     self.state = WEBSOCKET_STATE_CONNECTED
-                    await ws.send_json(
-                        self._build_websocket_request("printer.objects.list")
-                    )
+                    _, data = self._build_websocket_request("printer.objects.list")
+                    await ws.send_json(data)
                     done, unfinished = await asyncio.wait(
                         (
                             self._loop.create_task(self.loop_recv(ws)),
@@ -257,8 +259,12 @@ class WebsocketClient:
                 _LOGGER.error("Websocket unknown error: %s", error)
                 traceback.print_exc()
 
+            # Clean up pending requests
+            for req in self._requests.values():
+                req.cancel()
+
             # Stop was requested, do not try to reconnect
-            if self.state == WEBSOCKET_STATE_STOPPING:
+            if not self.retry or self.state == WEBSOCKET_STATE_STOPPING:
                 self.state = WEBSOCKET_STATE_STOPPED
                 break
             else:
@@ -294,5 +300,6 @@ class WebsocketClient:
         """Stop the websocket connection."""
         self._runtask = None
         self.state = WEBSOCKET_STATE_STOPPING
+
         if self._ws:
             await self._ws.close()

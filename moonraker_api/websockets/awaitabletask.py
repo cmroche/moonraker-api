@@ -58,6 +58,10 @@ class AwaitableTask:
         """Wait for the task to be completed, up to the timeout"""
         return await self._task
 
+    def cancel(self):
+        """Cancel any requests still waiting for a response"""
+        self._task.cancel()
+
 
 class AwaitableTaskContext(Generic[_RetType]):
     """Async context manager for awaitable tasks"""
