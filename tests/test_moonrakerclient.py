@@ -6,6 +6,7 @@
 
 import asyncio
 
+from unittest.mock import patch
 from .common import create_moonraker_service
 
 
@@ -25,11 +26,8 @@ async def test_connect(aiohttp_server, moonraker):
 
 async def test_api_request(aiohttp_server, moonraker):
     """Test sending a request and waiting on a response"""
-    _ = await create_moonraker_service(aiohttp_server)
+    await create_moonraker_service(aiohttp_server)
 
-    task = asyncio.create_task(moonraker.connect())
-    # TODO: This doesn't work because we don't handle server responses yet
-    # it just times out ...
+    await moonraker.connect()
     response = await moonraker.printer_administration.restart()
     await moonraker.disconnect()
-    await task

@@ -15,15 +15,6 @@ from moonraker_api.websockets.websocketclient import (
     WebsocketStatusListener,
 )
 
-from .const import (
-    CHANNELS_ALL,
-    WEBSOCKET_STATE_CONNECTED,
-    WEBSOCKET_STATE_CONNECTING,
-    WEBSOCKET_STATE_READY,
-    WEBSOCKET_STATE_DISCONNECTED,
-    WEBSOCKET_STATE_STOPPING,
-)
-
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -70,6 +61,6 @@ class MoonrakerClient(WebsocketClient):
 
     async def _loop_recv_internal(self, message: Any) -> None:
         """Private method to allow processing if incoming messages"""
-        for module in self.modules:
-            if module.process_data_message(message):
+        for module in self.modules.values():
+            if await module.process_data_message(message):
                 break

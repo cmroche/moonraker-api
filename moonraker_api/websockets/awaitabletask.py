@@ -38,7 +38,7 @@ class AwaitableTask:
     @property
     def req_id(self) -> int:
         """ID of the AwaitableTask"""
-        return self.req_id
+        return self._req_id
 
     @property
     def timeout(self) -> int:
@@ -52,6 +52,7 @@ class AwaitableTask:
 
     def set_complete(self) -> None:
         """Sets the task as complete"""
+        self._event.set()
 
     async def wait(self):
         """Wait for the task to be completed, up to the timeout"""

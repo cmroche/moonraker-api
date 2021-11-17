@@ -38,8 +38,8 @@ async def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Moonraker API command line client.")
     parser.add_argument("--discovery", default=False, action="store_true")
-    parser.add_argument("--host", metavar="h")
-    parser.add_argument("--reset")
+    parser.add_argument("--host", default="atlas.local", metavar="h")
+    parser.add_argument("--reset", default=False, action="store_true")
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)

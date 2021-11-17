@@ -6,8 +6,10 @@
 
 import asyncio
 from asyncio.tasks import FIRST_COMPLETED
+import contextlib
 import logging
 import json
+import traceback
 
 from aiohttp import ClientSession, ClientResponseError, ClientConnectionError, WSMsgType
 from asyncio import Task
@@ -15,8 +17,10 @@ from asyncio.events import AbstractEventLoop
 from typing import Any, Coroutine, Dict, List
 
 from aiohttp.client_ws import ClientWebSocketResponse
+from asyncio.locks import Event
 
 from moonraker_api.const import (
+    WEBSOCKET_CONNECTION_TIMEOUT,
     WEBSOCKET_RETRY_DELAY,
     WEBSOCKET_STATE_CONNECTED,
     WEBSOCKET_STATE_CONNECTING,
@@ -41,9 +45,9 @@ class WebsocketStatusListener:
 class WebsocketRequest(AwaitableTask):
     """Make a waitable request to the API"""
 
-    def __init__(self, req_id: int, request: Any, timeout: int = 120) -> None:
+    def __init__(self, req_id: int, request: Any) -> None:
         """Initialize the request"""
-        super().__init__(req_id, timeout)
+        super().__init__(req_id, WEBSOCKET_CONNECTION_TIMEOUT)
         self.response = None
         self.request = request
 
@@ -56,6 +60,10 @@ class WebsocketRequest(AwaitableTask):
         """Set the response and signal that we are done"""
         self.response = response
         self.set_complete()
+
+
+class ClientAlreadyConnectedError(Exception):
+    """Raised when trying to connect to an already active connection."""
 
 
 class WebsocketClient:
@@ -95,8 +103,9 @@ class WebsocketClient:
         self._tasks = []
         self._req_id = 0
 
+        self._runtask: Task = None
         self._requests_pending = asyncio.Queue[WebsocketRequest]()
-        self._requests: Dict[int, AwaitableTask] = {}
+        self._requests: Dict[int, WebsocketRequest] = {}
 
     def _task_done_callback(self, task):
         if task.exception():
@@ -152,7 +161,7 @@ class WebsocketClient:
         await self._requests_pending.put(req)
         return req
 
-    async def request(self, method: str, **kwargs) -> Any:
+    def request(self, method: str, **kwargs) -> Any:
         """Build a json-rpc request for the API
 
         Args:
@@ -173,10 +182,20 @@ class WebsocketClient:
             _LOGGER.debug("Received message: %s", message)
             if message.type == WSMsgType.TEXT:
                 m = message.json()
+
+                # Look for incoming RPC responses, and match to
+                # their outstanding tasks
+                res_id = m.get("id")
+                if res_id:
+                    req = self._requests.get(res_id)
+                    if req:
+                        req.set_result(m)
+
+                # Dispatch messages to modules
                 await self._loop_recv_internal(m)
 
                 if self.state == WEBSOCKET_STATE_CONNECTED:
-                    if m.has("objects"):
+                    if m.get("objects"):
                         self.state = WEBSOCKET_STATE_READY
 
             elif message.type == WSMsgType.CLOSED:
@@ -195,16 +214,24 @@ class WebsocketClient:
             await client.send_str(request_str)
             self._requests_pending.task_done()
 
-    async def connect(self):
-        """Start the websocket connection."""
+    async def _run(self, conn_event: Event):
+        """Start the websocket connection and run the update loop.
+
+        Args:
+            conn_event (Event): This event is set once the connection is complete
+        """
         session = ClientSession()
 
         while self.state != WEBSOCKET_STATE_STOPPING:
             self.state = WEBSOCKET_STATE_CONNECTING
             try:
                 async with session.ws_connect(self._build_websocket_uri()) as ws:
+                    self._ws = ws
+                    conn_event.set()
                     self.state = WEBSOCKET_STATE_CONNECTED
-                    ws.send_json(self._build_websocket_request("printer.objects.list"))
+                    await ws.send_json(
+                        self._build_websocket_request("printer.objects.list")
+                    )
                     done, unfinished = await asyncio.wait(
                         (
                             self._loop.create_task(self.loop_recv(ws)),
@@ -228,6 +255,7 @@ class WebsocketClient:
                 _LOGGER.error("Websocket connection timed out")
             except Exception as error:  # pylint: disable=broad-except
                 _LOGGER.error("Websocket unknown error: %s", error)
+                traceback.print_exc()
 
             # Stop was requested, do not try to reconnect
             if self.state == WEBSOCKET_STATE_STOPPING:
@@ -237,8 +265,34 @@ class WebsocketClient:
                 self.state = WEBSOCKET_STATE_DISCONNECTED
                 await asyncio.sleep(WEBSOCKET_RETRY_DELAY)
 
+    async def connect(self, blocking: bool = True) -> bool:
+        """Start the run loop and connect
+
+        Args:
+            blocking (bool, optional): Default to `True`, waits for the
+            connection to complete or timeout before returning.
+
+        Note:
+            Even if the connection fails, the update loop will keep trying
+            to reconnect to websocket following a regular timeout. To stop
+            this reconnect, call ``disconnect()``
+
+        Returns:
+            A ``boolean`` indicating if the connection succeeded
+        """
+        if self._runtask:
+            raise ClientAlreadyConnectedError()
+
+        conn_event = asyncio.Event()
+        self._runtask = self._loop.create_task(self._run(conn_event))
+        with contextlib.suppress(asyncio.TimeoutError):
+            await asyncio.wait_for(conn_event.wait(), WEBSOCKET_CONNECTION_TIMEOUT)
+
+        return conn_event.is_set()
+
     async def disconnect(self):
         """Stop the websocket connection."""
+        self._runtask = None
         self.state = WEBSOCKET_STATE_STOPPING
         if self._ws:
             await self._ws.close()
