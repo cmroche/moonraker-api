@@ -27,7 +27,7 @@ async def test_connect(aiohttp_server, moonraker):
 
 async def test_api_request(aiohttp_server, aiohttp_client, moonraker):
     """Test sending a request and waiting on a response"""
-    await create_moonraker_service(aiohttp_server, no_response=True)
+    await create_moonraker_service(aiohttp_server)
 
     await moonraker.connect()
     await moonraker.printer_administration.info()

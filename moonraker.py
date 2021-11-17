@@ -33,6 +33,8 @@ async def main(args):
 
     if args.reset:
         await client.printer_administration.restart()
+    if args.info:
+        await client.printer_administration.info()
 
 
 if __name__ == "__main__":
@@ -40,6 +42,7 @@ if __name__ == "__main__":
     parser.add_argument("--discovery", default=False, action="store_true")
     parser.add_argument("--host", default="atlas.local", metavar="h")
     parser.add_argument("--reset", default=False, action="store_true")
+    parser.add_argument("--info", default=True, action="store_true")
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)

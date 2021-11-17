@@ -27,12 +27,19 @@ async def create_moonraker_service(aiohttp_server, disconnect: bool = False):
         await ws.prepare(request)
         msg = await ws.receive()
 
-        if msg.type == WSMsgType.TEXT:
+        while msg.type == WSMsgType.TEXT:
             obj = msg.json()
             method = obj.get("method")
+            if method == "printer.objects.list":
+                msg = await ws.receive()
+                continue
             if not disconnect and method in TEST_METHOD_RESPONSES:
-                resp = json.dumps(TEST_METHOD_RESPONSES[method])
+                req_id = obj.get("id")
+                response = TEST_METHOD_RESPONSES[method]
+                response["id"] = req_id
+                resp = json.dumps(response)
                 await ws.send_str(resp)
+            break
 
         await ws.close()
         return ws
@@ -66,7 +73,10 @@ async def create_moonraker_service_looping(aiohttp_server, no_response: bool = F
                 obj = msg.json()
                 method = obj.get("method")
                 if not no_response and method in TEST_METHOD_RESPONSES:
-                    resp = json.dumps(TEST_METHOD_RESPONSES[method])
+                    req_id = obj.get("id")
+                    response = TEST_METHOD_RESPONSES[method]
+                    response.update("id", req_id)
+                    resp = json.dumps(response)
                     await ws.send_str(resp)
             elif msg.type == WSMsgType.ERROR:
                 print("ws connection closed with exception %s", ws.exception())

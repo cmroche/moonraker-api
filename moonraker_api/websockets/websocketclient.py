@@ -45,9 +45,11 @@ class WebsocketStatusListener:
 class WebsocketRequest(AwaitableTask):
     """Make a waitable request to the API"""
 
-    def __init__(self, req_id: int, request: Any) -> None:
+    def __init__(
+        self, req_id: int, request: Any, timeout: int = WEBSOCKET_CONNECTION_TIMEOUT
+    ) -> None:
         """Initialize the request"""
-        super().__init__(req_id, WEBSOCKET_CONNECTION_TIMEOUT)
+        super().__init__(req_id, timeout)
         self.response = None
         self.request = request
 
@@ -81,6 +83,7 @@ class WebsocketClient:
         port: int = 7125,
         retry: bool = True,
         loop: AbstractEventLoop = None,
+        timeout: int = WEBSOCKET_CONNECTION_TIMEOUT,
     ) -> None:
         """Initialize the moonraker client object
 
@@ -96,6 +99,7 @@ class WebsocketClient:
         self.host = host
         self.port = port
         self.retry = retry
+        self._timeout = timeout
         self._loop = loop or asyncio.get_event_loop_policy().get_event_loop()
 
         self._ws = None
@@ -160,7 +164,7 @@ class WebsocketClient:
 
     async def _request(self, method: str, **kwargs) -> Any:
         req_id, data = self._build_websocket_request(method, **kwargs)
-        req = WebsocketRequest(req_id, data)
+        req = WebsocketRequest(req_id, data, timeout=self._timeout)
         await self._requests_pending.put(req)
         return req
 
@@ -188,18 +192,18 @@ class WebsocketClient:
 
                 # Look for incoming RPC responses, and match to
                 # their outstanding tasks
-                res_id = m.get("id")
-                if res_id:
-                    req = self._requests.get(res_id)
-                    if req:
-                        req.set_result(m)
+                if m.get("result"):
+                    res_id = m.get("id")
+                    if res_id:
+                        req = self._requests.get(res_id)
+                        if req:
+                            req.set_result(m)
+                    if self.state == WEBSOCKET_STATE_CONNECTED:
+                        if m["result"].get("objects"):
+                            self.state = WEBSOCKET_STATE_READY
 
                 # Dispatch messages to modules
                 await self._loop_recv_internal(m)
-
-                if self.state == WEBSOCKET_STATE_CONNECTED:
-                    if m.get("objects"):
-                        self.state = WEBSOCKET_STATE_READY
 
             elif message.type == WSMsgType.CLOSED:
                 _LOGGER.info("Recived websocket connection gracefully closed message")
@@ -284,15 +288,17 @@ class WebsocketClient:
             this reconnect, call ``disconnect()``
 
         Returns:
-            A ``boolean`` indicating if the connection succeeded
+            A ``boolean`` indicating if the connection succeeded, if
+            ``blocking`` is False this will return False.
         """
         if self._runtask:
             raise ClientAlreadyConnectedError()
 
         conn_event = asyncio.Event()
         self._runtask = self._loop.create_task(self._run(conn_event))
-        with contextlib.suppress(asyncio.TimeoutError):
-            await asyncio.wait_for(conn_event.wait(), WEBSOCKET_CONNECTION_TIMEOUT)
+        if blocking:
+            with contextlib.suppress(asyncio.TimeoutError):
+                await asyncio.wait_for(conn_event.wait(), self._timeout)
 
         return conn_event.is_set()
 

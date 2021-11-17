@@ -35,19 +35,58 @@ TEST_DATA_UPDATE = {
 }
 
 TEST_DATA_PRINTER_INFO = {
-    "state": "ready",
-    "state_message": "Printer is ready",
-    "hostname": "my-pi-hostname",
-    "software_version": "v0.9.1-302-g900c7396",
-    "cpu_info": "4 core ARMv7 Processor rev 4 (v7l)",
-    "klipper_path": "/home/pi/klipper",
-    "python_path": "/home/pi/klippy-env/bin/python",
-    "log_file": "/tmp/klippy.log",
-    "config_file": "/home/pi/printer.cfg",
+    "jsonrpc": "2.0",
+    "result": {
+        "state_message": "Printer is ready",
+        "klipper_path": "/home/pi/klipper",
+        "config_file": "/home/pi/klipper_config/printer.cfg",
+        "software_version": "v0.10.0-129-g4861a0d9",
+        "hostname": "atlas",
+        "cpu_info": "4 core ARMv7 Processor rev 4 (v7l)",
+        "state": "ready",
+        "python_path": "/home/pi/klippy-env/bin/python",
+        "log_file": "/home/pi/klipper_logs/klippy.log",
+    },
+    "id": 1,
 }
 
 TEST_DATA_SUPPORTED_MODULES = {
-    "objects": ["gcode", "toolhead", "bed_mesh", "configfile"]
+    "jsonrpc": "2.0",
+    "result": {
+        "objects": [
+            "webhooks",
+            "configfile",
+            "mcu",
+            "idle_timeout",
+            "gcode_move",
+            "menu",
+            "display_status",
+            "tmc2209 extruder",
+            "heaters",
+            "heater_fan hotend_fan",
+            "fan",
+            "print_stats",
+            "virtual_sdcard",
+            "pause_resume",
+            "gcode_macro PAUSE",
+            "gcode_macro RESUME",
+            "gcode_macro CANCEL_PRINT",
+            "heater_bed",
+            "gcode_macro PRINT_START",
+            "gcode_macro PRINT_END",
+            "gcode_macro LOAD_FILAMENT",
+            "gcode_macro UNLOAD_FILAMENT",
+            "tmc2209 stepper_x",
+            "tmc2209 stepper_y",
+            "tmc2209 stepper_z",
+            "motion_report",
+            "query_endstops",
+            "system_stats",
+            "toolhead",
+            "extruder",
+        ]
+    },
+    "id": 0,
 }
 
 TEST_METHOD_RESPONSES = {

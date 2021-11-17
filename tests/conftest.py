@@ -25,5 +25,5 @@ from moonraker_api.moonrakerclient import MoonrakerClient, MoonrakerListener
 def moonraker_client():
     """Create a simple api client for testing"""
     h = Mock(name="MoonrakeListener", spec=MoonrakerListener)
-    c = MoonrakerClient(host="127.0.0.1", port=7125, retry=False, listener=h)
+    c = MoonrakerClient(host="127.0.0.1", port=7125, retry=False, listener=h, timeout=2)
     return c
