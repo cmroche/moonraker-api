@@ -75,7 +75,7 @@ async def create_moonraker_service_looping(aiohttp_server, no_response: bool = F
                 if not no_response and method in TEST_METHOD_RESPONSES:
                     req_id = obj.get("id")
                     response = TEST_METHOD_RESPONSES[method]
-                    response.update("id", req_id)
+                    response["id"] = req_id
                     resp = json.dumps(response)
                     await ws.send_str(resp)
             elif msg.type == WSMsgType.ERROR:

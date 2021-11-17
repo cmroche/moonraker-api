@@ -109,7 +109,7 @@ class WebsocketClient:
         self._ws = None
 
         self._task = None
-        self._state = None
+        self._state = WEBSOCKET_STATE_STOPPED
         self._retries = 0
         self._tasks = []
         self._req_id = 0
@@ -245,6 +245,9 @@ class WebsocketClient:
             self.state = WEBSOCKET_STATE_CONNECTING
             try:
                 async with session.ws_connect(self._build_websocket_uri()) as ws:
+                    if self.state == WEBSOCKET_STATE_STOPPING:
+                        break
+
                     self._ws = ws
                     self.state = WEBSOCKET_STATE_CONNECTED
                     conn_event.set()
@@ -325,7 +328,9 @@ class WebsocketClient:
     async def disconnect(self):
         """Stop the websocket connection."""
         self._runtask = None
-        self.state = WEBSOCKET_STATE_STOPPING
 
-        if self._ws:
-            await self._ws.close()
+        if self.state != WEBSOCKET_STATE_STOPPED:
+            self.state = WEBSOCKET_STATE_STOPPING
+
+            if self._ws:
+                await self._ws.close()

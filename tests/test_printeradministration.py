@@ -11,19 +11,23 @@ from pytest_aiohttp import aiohttp_server
 from random import randint
 
 from moonraker_api import MoonrakerClient, MoonrakerListener, PrinterAdminstration
-from .common import create_moonraker_service
+from .common import create_moonraker_service_looping
 from .data import TEST_DATA_SUPPORTED_MODULES
 
 
 async def test_support_modules(aiohttp_server, moonraker):
     """Test getting the supported modules from the API"""
-    server = await create_moonraker_service(aiohttp_server)
+    await create_moonraker_service_looping(aiohttp_server)
 
-    task = asyncio.create_task(moonraker.connect())
+    await moonraker.connect()
+    await asyncio.sleep(2)  # Command is exeptionally auto-propagated
     await moonraker.disconnect()
-    await task
 
     assert (
         moonraker.printer_administration.supported_modules
-        == TEST_DATA_SUPPORTED_MODULES["objects"]
+        == TEST_DATA_SUPPORTED_MODULES["result"]["objects"]
     )
+
+
+async def test_printer_info(aiohttp_server, moonraker):
+    """Test ``printer.info`` method calls"""

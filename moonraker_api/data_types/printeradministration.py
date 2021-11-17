@@ -31,10 +31,11 @@ class PrinterAdminstration(WebsocketDataHandler):
 
     async def process_data_message(self, message: Any) -> bool:
         """Process incoming data messages for messages of interest"""
-        supported_modules = message.get("objects")
-        if supported_modules:
-            self.supported_modules = supported_modules
-            return True
+        if message.get("result"):
+            supported_modules = message["result"].get("objects")
+            if supported_modules:
+                self.supported_modules = supported_modules
+                return True
         return False
 
     async def restart(self) -> Coroutine:
