@@ -65,7 +65,11 @@ class WebsocketRequest(AwaitableTask):
 
 
 class ClientAlreadyConnectedError(Exception):
-    """Raised when trying to connect to an already active connection."""
+    """Raised when trying to connect to an already active connection"""
+
+
+class ClientNotConnectedError(Exception):
+    """Raise when trying to make a request without a connection"""
 
 
 class WebsocketClient:
@@ -162,6 +166,11 @@ class WebsocketClient:
             req["params"] = kwargs
         return tx_id, req
 
+    @property
+    def is_connected(self):
+        """Return True when the websocket is connected"""
+        return self.state in [WEBSOCKET_STATE_CONNECTED, WEBSOCKET_STATE_READY]
+
     async def _request(self, method: str, **kwargs) -> Any:
         req_id, data = self._build_websocket_request(method, **kwargs)
         req = WebsocketRequest(req_id, data, timeout=self._timeout)
@@ -175,6 +184,9 @@ class WebsocketClient:
             method (str): The api method to call
             **kwargs: Arguments to pass to the API call
         """
+        if not self.is_connected:
+            raise ClientNotConnectedError()
+
         return AwaitableTaskContext[WebsocketRequest](
             self._request(method, **kwargs), self._requests
         )
@@ -234,10 +246,16 @@ class WebsocketClient:
             try:
                 async with session.ws_connect(self._build_websocket_uri()) as ws:
                     self._ws = ws
-                    conn_event.set()
                     self.state = WEBSOCKET_STATE_CONNECTED
+                    conn_event.set()
+
+                    # This request should probably be moved into
+                    # printer administration and respond to a connected
+                    # event to remove knowledge of API specifics from this class
                     _, data = self._build_websocket_request("printer.objects.list")
                     await ws.send_json(data)
+
+                    # Start the send/recv routines
                     done, unfinished = await asyncio.wait(
                         (
                             self._loop.create_task(self.loop_recv(ws)),
@@ -245,7 +263,6 @@ class WebsocketClient:
                         ),
                         return_when=FIRST_COMPLETED,
                     )
-
                     for task in unfinished:
                         task.cancel()
 
@@ -264,6 +281,9 @@ class WebsocketClient:
                 traceback.print_exc()
 
             # Clean up pending requests
+            for _ in range(self._requests_pending.qsize()):
+                self._requests_pending.get_nowait()
+                self._requests_pending.task_done()
             for req in self._requests.values():
                 req.cancel()
 

@@ -5,7 +5,7 @@
 # This file may be distributed under the terms of the GNU GPLv3 license
 import json
 from aiohttp import web, WSMsgType
-from pytest_aiohttp import aiohttp_client, aiohttp_server
+from pytest_aiohttp import aiohttp_server
 
 from tests.data import TEST_METHOD_RESPONSES
 
