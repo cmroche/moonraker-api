@@ -295,6 +295,9 @@ class WebsocketClient:
                 _LOGGER.error("Websocket unknown error: %s", error)
                 traceback.print_exc()
 
+            # Stop waiting on a connect event
+            conn_event.set()
+
             # Clean up pending requests
             for _ in range(self._requests_pending.qsize()):
                 self._requests_pending.get_nowait()
@@ -335,7 +338,7 @@ class WebsocketClient:
             with contextlib.suppress(asyncio.TimeoutError):
                 await asyncio.wait_for(conn_event.wait(), self._timeout)
 
-        return conn_event.is_set()
+        return self.is_connected
 
     async def disconnect(self):
         """Stop the websocket connection."""

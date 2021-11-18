@@ -6,4 +6,3 @@
 
 from .moonrakerclient import *
 from .data_types.printeradministration import PrinterAdminstration
-from .data_types.authorization import Authorization
