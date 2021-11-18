@@ -154,9 +154,10 @@ class WebsocketClient:
     def state(self, value: str) -> None:
         """Sets the current state of the websocket and raises a
         state change event."""
-        self._state = value
-        _LOGGER.debug("Websocket changing to state %s", value)
-        self._create_task(self.listener.state_changed(value))
+        if self._state != value:
+            self._state = value
+            _LOGGER.debug("Websocket changing to state %s", value)
+            self._create_task(self.listener.state_changed(value))
 
     def _build_websocket_uri(self) -> str:
         return f"ws://{self.host}:{self.port}/websocket"
@@ -248,7 +249,7 @@ class WebsocketClient:
         """
         session = ClientSession()
 
-        while self.state != WEBSOCKET_STATE_STOPPING:
+        while self.state != WEBSOCKET_STATE_STOPPED:
             self.state = WEBSOCKET_STATE_CONNECTING
             try:
                 headers = None
@@ -258,7 +259,7 @@ class WebsocketClient:
                     self._build_websocket_uri(),
                     headers=headers,
                 ) as ws:
-                    if self.state == WEBSOCKET_STATE_STOPPING:
+                    if self.state == WEBSOCKET_STATE_STOPPED:
                         break
 
                     self._ws = ws
@@ -335,6 +336,7 @@ class WebsocketClient:
             raise ClientAlreadyConnectedError()
 
         conn_event = self._loop.create_future()
+        self.state = WEBSOCKET_STATE_CONNECTING
         self._runtask = self._loop.create_task(self._run(conn_event))
         if blocking:
             await asyncio.wait_for(conn_event, self._timeout)
