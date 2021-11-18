@@ -5,8 +5,8 @@
 # This file may be distributed under the terms of the GNU GPLv3 license
 
 import asyncio
+from asyncio.futures import Future
 from asyncio.tasks import FIRST_COMPLETED
-import contextlib
 import logging
 import json
 import traceback
@@ -69,7 +69,11 @@ class ClientAlreadyConnectedError(Exception):
 
 
 class ClientNotConnectedError(Exception):
-    """Raise when trying to make a request without a connection"""
+    """Raised when trying to make a request without a connection"""
+
+
+class ClientNotAuthenticatedError(Exception):
+    """Raised when trying to connect without correct authentication"""
 
 
 class WebsocketClient:
@@ -236,7 +240,7 @@ class WebsocketClient:
             await client.send_str(request_str)
             self._requests_pending.task_done()
 
-    async def _run(self, conn_event: Event):
+    async def _run(self, conn_event: Future):
         """Start the websocket connection and run the update loop.
 
         Args:
@@ -259,7 +263,7 @@ class WebsocketClient:
 
                     self._ws = ws
                     self.state = WEBSOCKET_STATE_CONNECTED
-                    conn_event.set()
+                    conn_event.set_result(True)
 
                     # This request should probably be moved into
                     # printer administration and respond to a connected
@@ -287,6 +291,8 @@ class WebsocketClient:
                 if error.code == 401:
                     _LOGGER.error("API access is unauthorized")
                     self.state = WEBSOCKET_STATE_STOPPING
+                    conn_event.set_exception(ClientNotAuthenticatedError)
+                    raise ClientNotAuthenticatedError
             except ClientConnectionError as error:
                 _LOGGER.error("Websocket connection error: %s", error)
             except asyncio.TimeoutError:
@@ -294,24 +300,20 @@ class WebsocketClient:
             except Exception as error:  # pylint: disable=broad-except
                 _LOGGER.error("Websocket unknown error: %s", error)
                 traceback.print_exc()
+            finally:
+                # Clean up pending requests
+                for _ in range(self._requests_pending.qsize()):
+                    self._requests_pending.get_nowait()
+                    self._requests_pending.task_done()
+                for req in self._requests.values():
+                    req.cancel()
 
-            # Stop waiting on a connect event
-            conn_event.set()
-
-            # Clean up pending requests
-            for _ in range(self._requests_pending.qsize()):
-                self._requests_pending.get_nowait()
-                self._requests_pending.task_done()
-            for req in self._requests.values():
-                req.cancel()
-
-            # Stop was requested, do not try to reconnect
-            if not self.retry or self.state == WEBSOCKET_STATE_STOPPING:
-                self.state = WEBSOCKET_STATE_STOPPED
-                break
-            else:
-                self.state = WEBSOCKET_STATE_DISCONNECTED
-                await asyncio.sleep(WEBSOCKET_RETRY_DELAY)
+                # Stop was requested, do not try to reconnect
+                if not self.retry or self.state == WEBSOCKET_STATE_STOPPING:
+                    self.state = WEBSOCKET_STATE_STOPPED
+                else:
+                    self.state = WEBSOCKET_STATE_DISCONNECTED
+                    await asyncio.sleep(WEBSOCKET_RETRY_DELAY)
 
     async def connect(self, blocking: bool = True) -> bool:
         """Start the run loop and connect
@@ -332,11 +334,10 @@ class WebsocketClient:
         if self._runtask:
             raise ClientAlreadyConnectedError()
 
-        conn_event = asyncio.Event()
+        conn_event = self._loop.create_future()
         self._runtask = self._loop.create_task(self._run(conn_event))
         if blocking:
-            with contextlib.suppress(asyncio.TimeoutError):
-                await asyncio.wait_for(conn_event.wait(), self._timeout)
+            await asyncio.wait_for(conn_event, self._timeout)
 
         return self.is_connected
 

@@ -7,6 +7,7 @@
 import asyncio
 import pytest
 
+from aiohttp import web
 from unittest.mock import patch
 from moonraker_api.const import (
     WEBSOCKET_STATE_CONNECTED,
@@ -16,9 +17,14 @@ from moonraker_api.const import (
 
 from moonraker_api.websockets.websocketclient import (
     ClientAlreadyConnectedError,
+    ClientNotAuthenticatedError,
     ClientNotConnectedError,
 )
-from .common import create_moonraker_service, create_moonraker_service_looping
+from .common import (
+    create_moonraker_service,
+    create_moonraker_service_looping,
+    create_moonraker_service_error,
+)
 
 
 async def test_connect(aiohttp_server, moonraker):
@@ -56,6 +62,18 @@ async def test_connect_twice(aiohttp_server, moonraker):
     await moonraker.disconnect()
 
     assert moonraker.state in [WEBSOCKET_STATE_STOPPED, WEBSOCKET_STATE_STOPPING]
+
+
+async def test_connect_unauthorized(aiohttp_server, moonraker):
+    """Test sending a request without authentication"""
+    await create_moonraker_service_error(aiohttp_server, web.HTTPUnauthorized())
+
+    with pytest.raises(ClientNotAuthenticatedError):
+        connected = await moonraker.connect()
+        assert not connected
+
+    assert not moonraker.is_connected
+    assert moonraker.state == WEBSOCKET_STATE_STOPPED
 
 
 async def test_api_request(aiohttp_server, moonraker):
