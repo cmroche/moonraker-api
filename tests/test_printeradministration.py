@@ -6,11 +6,9 @@
 
 import asyncio
 
-from aiohttp import web
 from pytest_aiohttp import aiohttp_server
 from random import randint
 
-from moonraker_api import MoonrakerClient, MoonrakerListener, PrinterAdminstration
 from .common import create_moonraker_service_looping
 from .data import TEST_DATA_SUPPORTED_MODULES
 

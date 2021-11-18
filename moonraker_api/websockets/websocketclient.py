@@ -85,6 +85,7 @@ class WebsocketClient:
         listener: WebsocketStatusListener,
         host: str,
         port: int = 7125,
+        api_key: str = None,
         retry: bool = True,
         loop: AbstractEventLoop = None,
         timeout: int = WEBSOCKET_CONNECTION_TIMEOUT,
@@ -95,6 +96,7 @@ class WebsocketClient:
             listener (MoonrakerListen): Event listener
             host (str): hostname or IP address of the printer
             port (int, optional): Defaults to 7125
+            api_key (str, options): API key
             retry (bool, optional): Enable reconnectry/retry on error
             loop (AbstractEventLoop, option):
                 Provide an optional asyncio loop for tasks
@@ -103,6 +105,7 @@ class WebsocketClient:
         self.host = host
         self.port = port
         self.retry = retry
+        self.api_key = api_key
         self._timeout = timeout
         self._loop = loop or asyncio.get_event_loop_policy().get_event_loop()
 
@@ -244,7 +247,13 @@ class WebsocketClient:
         while self.state != WEBSOCKET_STATE_STOPPING:
             self.state = WEBSOCKET_STATE_CONNECTING
             try:
-                async with session.ws_connect(self._build_websocket_uri()) as ws:
+                headers = None
+                if self.api_key:
+                    headers = [("X-Api-Key", self.api_key)]
+                async with session.ws_connect(
+                    self._build_websocket_uri(),
+                    headers=headers,
+                ) as ws:
                     if self.state == WEBSOCKET_STATE_STOPPING:
                         break
 
@@ -275,6 +284,9 @@ class WebsocketClient:
 
             except ClientResponseError as error:
                 _LOGGER.warning("Websocket request error: %s", error)
+                if error.code == 401:
+                    _LOGGER.error("API access is unauthorized")
+                    self.state = WEBSOCKET_STATE_STOPPING
             except ClientConnectionError as error:
                 _LOGGER.error("Websocket connection error: %s", error)
             except asyncio.TimeoutError:

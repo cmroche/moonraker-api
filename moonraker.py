@@ -28,7 +28,7 @@ async def main(args):
         return
 
     listener = WSHandler()
-    client = MoonrakerClient(host=args.host, listener=listener)
+    client = MoonrakerClient(host=args.host, listener=listener, api_key=args.api_key)
     await client.connect()
 
     if args.reset:
@@ -41,6 +41,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Moonraker API command line client.")
     parser.add_argument("--discovery", default=False, action="store_true")
     parser.add_argument("--host", default="atlas.local", metavar="h")
+    parser.add_argument(
+        "--api-key", default="e438d2303790417ba4e564520df30893", action="store"
+    )
     parser.add_argument("--reset", default=False, action="store_true")
     parser.add_argument("--info", default=True, action="store_true")
 

@@ -8,9 +8,10 @@ import logging
 
 from asyncio.events import AbstractEventLoop
 from typing import Any
-from moonraker_api.const import WEBSOCKET_CONNECTION_TIMEOUT
 
+from moonraker_api.const import WEBSOCKET_CONNECTION_TIMEOUT
 from moonraker_api.data_types.printeradministration import PrinterAdminstration
+
 from moonraker_api.websockets.websocketclient import (
     WebsocketClient,
     WebsocketStatusListener,
@@ -41,6 +42,7 @@ class MoonrakerClient(WebsocketClient):
         host: str,
         port: int = 7125,
         retry: bool = True,
+        api_key: str = None,
         loop: AbstractEventLoop = None,
         timeout: int = WEBSOCKET_CONNECTION_TIMEOUT,
     ) -> None:
@@ -50,13 +52,23 @@ class MoonrakerClient(WebsocketClient):
             listener (MoonrakerListen): Event listener
             host (str): hostname or IP address of the printer
             port (int, optional): Defaults to 7125
+            api_key (str, optional): API key
             loop (AbstractEventLoop, option):
                 Provide an optional asyncio loop for tasks
             timeout (int, option): Timeout in seconds for websockets
         """
-        WebsocketClient.__init__(self, listener, host, port, retry, loop, timeout)
+        WebsocketClient.__init__(
+            self, listener, host, port, api_key, retry, loop, timeout
+        )
 
-        self.modules = {"printer_administration": PrinterAdminstration(self)}
+        self.modules = {
+            "printer_administration": PrinterAdminstration(self),
+        }
+
+    @property
+    def authorization(self):
+        """Return ``Authorization`` object"""
+        return self.modules["authorization"]
 
     @property
     def printer_administration(self):
