@@ -212,7 +212,7 @@ class WebsocketClient:
                     if res_id:
                         req = self._requests.get(res_id)
                         if req:
-                            req.set_result(m)
+                            req.set_result(m["result"])
                     if self.state == WEBSOCKET_STATE_CONNECTED:
                         if m["result"].get("objects"):
                             self.state = WEBSOCKET_STATE_READY
