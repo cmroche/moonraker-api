@@ -15,6 +15,7 @@ from aiohttp import ClientSession, ClientResponseError, ClientConnectionError, W
 from asyncio import Task
 from asyncio.events import AbstractEventLoop
 from typing import Any, Coroutine, Dict, List
+import aiohttp
 
 from aiohttp.client_ws import ClientWebSocketResponse
 from asyncio.locks import Event
@@ -93,6 +94,7 @@ class WebsocketClient:
         retry: bool = True,
         loop: AbstractEventLoop = None,
         timeout: int = WEBSOCKET_CONNECTION_TIMEOUT,
+        session: aiohttp.ClientSession = None,
     ) -> None:
         """Initialize the moonraker client object
 
@@ -110,6 +112,7 @@ class WebsocketClient:
         self.port = port
         self.retry = retry
         self.api_key = api_key
+        self.session = session or ClientSession()
         self._timeout = timeout
         self._loop = loop or asyncio.get_event_loop_policy().get_event_loop()
 
@@ -247,15 +250,13 @@ class WebsocketClient:
         Args:
             conn_event (Event): This event is set once the connection is complete
         """
-        session = ClientSession()
-
         while self.state != WEBSOCKET_STATE_STOPPED:
             self.state = WEBSOCKET_STATE_CONNECTING
             try:
                 headers = None
                 if self.api_key:
                     headers = [("X-Api-Key", self.api_key)]
-                async with session.ws_connect(
+                async with self.session.ws_connect(
                     self._build_websocket_uri(),
                     headers=headers,
                 ) as ws:

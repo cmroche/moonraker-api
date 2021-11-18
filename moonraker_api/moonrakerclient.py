@@ -9,6 +9,8 @@ import logging
 from asyncio.events import AbstractEventLoop
 from typing import Any
 
+import aiohttp
+
 from moonraker_api.const import WEBSOCKET_CONNECTION_TIMEOUT
 from moonraker_api.data_types.printeradministration import PrinterAdminstration
 
@@ -45,6 +47,7 @@ class MoonrakerClient(WebsocketClient):
         api_key: str = None,
         loop: AbstractEventLoop = None,
         timeout: int = WEBSOCKET_CONNECTION_TIMEOUT,
+        session: aiohttp.ClientSession = None,
     ) -> None:
         """Initialize the moonraker client object
 
@@ -58,7 +61,7 @@ class MoonrakerClient(WebsocketClient):
             timeout (int, option): Timeout in seconds for websockets
         """
         WebsocketClient.__init__(
-            self, listener, host, port, api_key, retry, loop, timeout
+            self, listener, host, port, api_key, retry, loop, timeout, session
         )
 
         self.modules = {
