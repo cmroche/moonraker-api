@@ -63,7 +63,7 @@ class AwaitableTask:
         """Return exception of request"""
         return self._result.exception()
 
-    def set_exception(self, exception: type | BaseException) -> None:
+    def set_exception(self, exception: BaseException) -> None:
         """Set the exception for the request"""
         self._result.set_exception(exception)
 

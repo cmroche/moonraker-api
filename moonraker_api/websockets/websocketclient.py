@@ -37,7 +37,7 @@ class WebsocketStatusListener:
     async def state_changed(self, state: str) -> None:
         """Called when the websocket state changes"""
 
-    async def on_exception(self, exception: type | BaseException) -> None:
+    async def on_exception(self, exception: BaseException) -> None:
         """Called when an exception arises from the websocket run loop"""
 
 
@@ -250,7 +250,7 @@ class WebsocketClient:
         if not self.session:
             self.session = ClientSession(loop=self._loop)
 
-        async def set_exception(exception: type | BaseException) -> None:
+        async def set_exception(exception: BaseException) -> None:
             """Sets an exception received by the run loop"""
             for req in self._requests.values():
                 if not req.done():
