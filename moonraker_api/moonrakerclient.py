@@ -5,7 +5,6 @@
 # This file may be distributed under the terms of the GNU GPLv3 license
 
 import logging
-
 from asyncio.events import AbstractEventLoop
 from typing import Any
 
@@ -13,7 +12,6 @@ import aiohttp
 
 from moonraker_api.const import WEBSOCKET_CONNECTION_TIMEOUT
 from moonraker_api.data_types.printeradministration import PrinterAdminstration
-
 from moonraker_api.websockets.websocketclient import (
     WebsocketClient,
     WebsocketStatusListener,
@@ -43,8 +41,8 @@ class MoonrakerClient(WebsocketClient):
         listener: MoonrakerListener,
         host: str,
         port: int = 7125,
-        retry: bool = True,
         api_key: str = None,
+        ssl: bool = False,
         loop: AbstractEventLoop = None,
         timeout: int = WEBSOCKET_CONNECTION_TIMEOUT,
         session: aiohttp.ClientSession = None,
@@ -61,7 +59,7 @@ class MoonrakerClient(WebsocketClient):
             timeout (int, option): Timeout in seconds for websockets
         """
         WebsocketClient.__init__(
-            self, listener, host, port, api_key, retry, loop, timeout, session
+            self, listener, host, port, api_key, ssl, loop, timeout, session
         )
 
         self.modules = {

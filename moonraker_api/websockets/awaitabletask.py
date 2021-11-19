@@ -5,9 +5,8 @@
 # This file may be distributed under the terms of the GNU GPLv3 license
 
 import asyncio
-from asyncio.events import AbstractEventLoop
 import logging
-
+from asyncio.events import AbstractEventLoop
 from typing import Any, Coroutine, Dict, Generic, TypeVar
 
 _LOGGER = logging.getLogger(__name__)
@@ -28,11 +27,11 @@ class AwaitableTask:
     ) -> None:
         """Initialize the class, and wait event"""
         self._req_id = req_id
-        self._event = asyncio.Event()
         self._timeout = timeout
         self._loop = loop or asyncio.get_event_loop_policy().get_event_loop()
+        self._result = self._loop.create_future()
         self._task = asyncio.create_task(
-            asyncio.wait_for(self._event.wait(), timeout=self._timeout)
+            asyncio.wait_for(self._result, timeout=self._timeout)
         )
 
     @property
@@ -46,13 +45,27 @@ class AwaitableTask:
         return self._timeout
 
     @property
-    def is_complete(self) -> bool:
+    def done(self) -> bool:
         """Return the current status of our waiting task"""
-        return self._event.is_set()
+        return self._result.done()
 
-    def set_complete(self) -> None:
+    async def get_result(self) -> Any:
+        """Return result or request"""
+        await self._task
+        return self._result.result()
+
+    def set_result(self, result: Any) -> None:
         """Sets the task as complete"""
-        self._event.set()
+        self._result.set_result(result)
+
+    @property
+    def exception(self) -> Any:
+        """Return exception of request"""
+        return self._result.exception()
+
+    def set_exception(self, exception: type | BaseException) -> None:
+        """Set the exception for the request"""
+        self._result.set_exception(exception)
 
     async def wait(self):
         """Wait for the task to be completed, up to the timeout"""
@@ -60,7 +73,7 @@ class AwaitableTask:
 
     def cancel(self):
         """Cancel any requests still waiting for a response"""
-        self._task.cancel()
+        self._result.cancel()
 
 
 class AwaitableTaskContext(Generic[_RetType]):

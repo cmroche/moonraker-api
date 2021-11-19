@@ -4,7 +4,6 @@ import logging
 
 from moonraker_api import MoonrakerClient, MoonrakerListener
 
-
 logging.basicConfig(
     level=logging.WARNING, format="%(name)s - %(levelname)s - %(message)s"
 )

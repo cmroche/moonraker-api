@@ -5,8 +5,8 @@
 # This file may be distributed under the terms of the GNU GPLv3 license
 
 import logging
-
 from typing import Any, Coroutine
+
 from moonraker_api.websockets.websocketclient import WebsocketClient
 from moonraker_api.websockets.websocketdatahandler import WebsocketDataHandler
 
@@ -41,9 +41,9 @@ class PrinterAdminstration(WebsocketDataHandler):
     async def restart(self) -> Coroutine:
         """Send command to restart"""
         async with self._ws_client.request("printer.restart") as req:
-            return await req.result()
+            return await req.get_result()
 
     async def info(self) -> Coroutine:
         """Request printer information"""
         async with self._ws_client.request("printer.info") as req:
-            return await req.result()
+            return await req.get_result()

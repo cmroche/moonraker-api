@@ -5,9 +5,9 @@
 # This file may be distributed under the terms of the GNU GPLv3 license
 
 import asyncio
+from random import randint
 
 from pytest_aiohttp import aiohttp_server
-from random import randint
 
 from .common import create_moonraker_service_looping
 from .data import TEST_DATA_SUPPORTED_MODULES
