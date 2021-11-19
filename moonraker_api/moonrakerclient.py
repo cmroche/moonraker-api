@@ -24,9 +24,6 @@ class MoonrakerListener(WebsocketStatusListener):
     """Base lass providing functions to receive events from the
     moonraker API"""
 
-    async def state_changed(self, state: str) -> None:
-        """Called when the websocket state changes"""
-
 
 class MoonrakerClient(WebsocketClient):
     """Moonraker API client class, repesents an API instance
