@@ -26,7 +26,7 @@ class PrinterAdminstration(WebsocketDataHandler):
         Args:
             ws_client (WebsocketClient): Websocket session client
         """
-        self._ws_client = ws_client
+        self.client = ws_client
         self.supported_modules = []
 
     async def process_data_message(self, message: Any) -> bool:
@@ -38,12 +38,23 @@ class PrinterAdminstration(WebsocketDataHandler):
                 return True
         return False
 
-    async def restart(self) -> Coroutine:
-        """Send command to restart"""
-        async with self._ws_client.request("printer.restart") as req:
+    async def _request_api(self, method) -> Any:
+        """Request and wait for the response"""
+        async with self.client.request(method) as req:
             return await req.get_result()
 
-    async def info(self) -> Coroutine:
+    async def host_restart(self) -> Any:
+        """Send command to restart"""
+        return await self._request_api("printer.restart")
+
+    async def info(self) -> Any:
         """Request printer information"""
-        async with self._ws_client.request("printer.info") as req:
-            return await req.get_result()
+        return await self._request_api("printer.info")
+
+    async def emergency_stop(self) -> Any:
+        """Send emergency stop command."""
+        return await self._request_api("printer.emergency_stop")
+
+    async def firmware_restart(self) -> Any:
+        """Send firmware restart command."""
+        return await self._request_api("printer.firmware_restart")

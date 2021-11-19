@@ -89,7 +89,18 @@ TEST_DATA_SUPPORTED_MODULES = {
     "id": 0,
 }
 
+TEST_DATA_SIMPLE_RESPONSE = {
+    "jsonrpc": "2.0",
+    "result": {"res_data": "success"},
+    "id": 0,
+}
+
 TEST_METHOD_RESPONSES = {
+    # Simple test responses first
+    "printer.restart": TEST_DATA_SIMPLE_RESPONSE,
+    "printer.emergency_stop": TEST_DATA_SIMPLE_RESPONSE,
+    "printer.firmware_restart": TEST_DATA_SIMPLE_RESPONSE,
+    # Complex test responses (have their own data)
     "printer.info": TEST_DATA_PRINTER_INFO,
     "printer.objects.list": TEST_DATA_SUPPORTED_MODULES,
 }
