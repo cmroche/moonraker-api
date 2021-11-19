@@ -11,7 +11,7 @@ from typing import Any
 import aiohttp
 
 from moonraker_api.const import WEBSOCKET_CONNECTION_TIMEOUT
-from moonraker_api.data_types.printeradministration import PrinterAdminstration
+from moonraker_api.modules.printeradministration import PrinterAdminstration
 from moonraker_api.websockets.websocketclient import (
     WebsocketClient,
     WebsocketStatusListener,
