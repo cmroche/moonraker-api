@@ -7,7 +7,7 @@
 import asyncio
 import logging
 from asyncio.events import AbstractEventLoop
-from typing import Any, Coroutine, Dict, Generic, TypeVar
+from typing import Any, Coroutine, Generic, TypeVar, TypedDict
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -49,21 +49,21 @@ class AwaitableTask:
         """Return the current status of our waiting task"""
         return self._result.done()
 
-    async def get_result(self) -> Any:
+    async def get_result(self) -> TypedDict:
         """Return result or request"""
         await self._task
         return self._result.result()
 
-    def set_result(self, result: Any) -> None:
+    def set_result(self, result: TypedDict) -> None:
         """Sets the task as complete"""
         self._result.set_result(result)
 
     @property
-    def exception(self) -> Any:
+    def exception(self) -> BaseException:
         """Return exception of request"""
         return self._result.exception()
 
-    def set_exception(self, exception: BaseException) -> None:
+    def set_exception(self, exception: type | BaseException) -> None:
         """Set the exception for the request"""
         self._result.set_exception(exception)
 
@@ -82,14 +82,14 @@ class AwaitableTaskContext(Generic[_RetType]):
     def __init__(
         self,
         coro: Coroutine["asyncio.Future[Any]", None, _RetType],
-        tasks: Dict[int, _RetType],
+        tasks: dict[int, _RetType],
     ) -> None:
         self._coro = coro
         self._tasks = tasks
         self._task = None
 
     @property
-    def tasks(self) -> Dict[int, _RetType]:
+    def tasks(self) -> dict[int, _RetType]:
         """Return the current dictionary of ids and tasks"""
         return self._tasks
 
@@ -100,6 +100,6 @@ class AwaitableTaskContext(Generic[_RetType]):
         self._tasks[task.req_id] = task
         return task
 
-    async def __aexit__(self, *args, **kwargs) -> None:
+    async def __aexit__(self, *args: Any, **kwargs: Any) -> None:
         """Remove the current task from the task list"""
         self._tasks.pop(self._task.req_id)

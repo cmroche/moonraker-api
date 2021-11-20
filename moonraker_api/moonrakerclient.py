@@ -6,15 +6,19 @@
 
 """Moonraker client API."""
 
+from __future__ import annotations
+
 import logging
 from asyncio.events import AbstractEventLoop
-from typing import Any
+from typing import Any, TypedDict
 
 import aiohttp
 
 from moonraker_api.const import WEBSOCKET_CONNECTION_TIMEOUT
-from moonraker_api.websockets.websocketclient import (WebsocketClient,
-                                                      WebsocketStatusListener)
+from moonraker_api.websockets.websocketclient import (
+    WebsocketClient,
+    WebsocketStatusListener,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -37,7 +41,7 @@ class MoonrakerClient(WebsocketClient):
         listener: MoonrakerListener,
         host: str,
         port: int = 7125,
-        api_key: str = None,
+        api_key: str | None = None,
         ssl: bool = False,
         loop: AbstractEventLoop = None,
         timeout: int = WEBSOCKET_CONNECTION_TIMEOUT,
@@ -59,14 +63,14 @@ class MoonrakerClient(WebsocketClient):
         )
         self.supported_modules = []
 
-    async def _loop_recv_internal(self, message: Any) -> None:
+    async def _loop_recv_internal(self, message: TypedDict) -> None:
         """Private method to allow processing if incoming messages"""
         if message.get("result"):
             supported_modules = message["result"].get("objects")
             if supported_modules:
                 self.supported_modules = supported_modules
 
-    async def call_method(self, method, **kwargs: Any) -> Any:
+    async def call_method(self, method: str, **kwargs: Any) -> TypedDict:
         """Call a json-rpc method and wait for the response.
 
         Args:
@@ -78,10 +82,10 @@ class MoonrakerClient(WebsocketClient):
         async with self.request(method, **kwargs) as req:
             return await req.get_result()
 
-    async def get_host_info(self) -> Any:
+    async def get_host_info(self) -> TypedDict:
         """Get the connected websocket id."""
         return await self.call_method("printer.info")
 
-    async def get_websocket_id(self) -> Any:
+    async def get_websocket_id(self) -> TypedDict:
         """Get the connected websocket id."""
         return await self.call_method("server.websocket.id")

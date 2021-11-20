@@ -3,6 +3,9 @@
 # Copyright (C) 2021 Clifford Roche <clifford.roche@gmail.com>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license
+"""Websocket management."""
+
+from __future__ import annotations
 
 import asyncio
 import json
@@ -11,7 +14,7 @@ from asyncio import Task
 from asyncio.events import AbstractEventLoop
 from asyncio.futures import Future
 from asyncio.tasks import FIRST_COMPLETED
-from typing import Any, Coroutine, Dict, List
+from typing import Any, Coroutine, TypedDict
 
 import aiohttp
 from aiohttp import ClientConnectionError, ClientResponseError, ClientSession, WSMsgType
@@ -37,7 +40,7 @@ class WebsocketStatusListener:
     async def state_changed(self, state: str) -> None:
         """Called when the websocket state changes"""
 
-    async def on_exception(self, exception: BaseException) -> None:
+    async def on_exception(self, exception: type | BaseException) -> None:
         """Called when an exception arises from the websocket run loop"""
 
     async def on_notification(self, method: str, data: Any) -> None:
@@ -50,7 +53,7 @@ class WebsocketRequest(AwaitableTask):
     def __init__(
         self,
         req_id: int,
-        request: Any,
+        request: TypedDict,
         timeout: int = WEBSOCKET_CONNECTION_TIMEOUT,
         loop: AbstractEventLoop = None,
     ) -> None:
@@ -84,7 +87,7 @@ class WebsocketClient:
         listener: WebsocketStatusListener,
         host: str,
         port: int = 7125,
-        api_key: str = None,
+        api_key: str | None = None,
         ssl: bool = False,
         loop: AbstractEventLoop = None,
         timeout: int = WEBSOCKET_CONNECTION_TIMEOUT,
@@ -119,9 +122,9 @@ class WebsocketClient:
 
         self._runtask: Task = None
         self._requests_pending = asyncio.Queue[WebsocketRequest]()
-        self._requests: Dict[int, WebsocketRequest] = {}
+        self._requests: dict[int, WebsocketRequest] = {}
 
-    def _task_done_callback(self, task):
+    def _task_done_callback(self, task) -> None:
         if task.exception():
             _LOGGER.exception("Uncaught exception", exc_info=task.exception())
         self._tasks.remove(task)
@@ -133,7 +136,7 @@ class WebsocketClient:
         return task
 
     @property
-    def tasks(self) -> List[Coroutine]:
+    def tasks(self) -> list[Coroutine]:
         """Returns the outstanding tasks waiting completion."""
         return self._tasks
 
@@ -164,7 +167,9 @@ class WebsocketClient:
         self._req_id += 1
         return tx_id
 
-    def _build_websocket_request(self, method: str, **kwargs) -> Any:
+    def _build_websocket_request(
+        self, method: str, **kwargs: Any
+    ) -> tuple[int, TypedDict]:
         tx_id = self._get_next_tx_id()
         req = {"jsonrpc": "2.0", "method": method, "id": tx_id}
         if kwargs:
@@ -172,17 +177,19 @@ class WebsocketClient:
         return tx_id, req
 
     @property
-    def is_connected(self):
+    def is_connected(self) -> bool:
         """Return True when the websocket is connected"""
         return self.state in [WEBSOCKET_STATE_CONNECTED, WEBSOCKET_STATE_READY]
 
-    async def _request(self, method: str, **kwargs) -> Any:
+    async def _request(self, method: str, **kwargs: Any) -> WebsocketRequest:
         req_id, data = self._build_websocket_request(method, **kwargs)
         req = WebsocketRequest(req_id, data, timeout=self._timeout, loop=self._loop)
         await self._requests_pending.put(req)
         return req
 
-    def request(self, method: str, **kwargs) -> Any:
+    def request(
+        self, method: str, **kwargs: Any
+    ) -> AwaitableTaskContext[WebsocketRequest]:
         """Build a json-rpc request for the API
 
         Args:
@@ -196,7 +203,7 @@ class WebsocketClient:
             self._request(method, **kwargs), self._requests
         )
 
-    async def _loop_recv_internal(self, message) -> None:
+    async def _loop_recv_internal(self, message: TypedDict) -> None:
         """Private method to allow processing if incoming messages"""
 
     async def loop_recv(self, client: ClientWebSocketResponse) -> None:
@@ -251,7 +258,7 @@ class WebsocketClient:
             finally:
                 self._requests_pending.task_done()
 
-    async def _run(self, conn_event: Future) -> Coroutine:
+    async def _run(self, conn_event: Future) -> None:
         """Start the websocket connection and run the update loop.
 
         Args:
@@ -351,7 +358,7 @@ class WebsocketClient:
 
         return self.is_connected
 
-    async def disconnect(self):
+    async def disconnect(self) -> None:
         """Stop the websocket connection."""
         if self.state != WEBSOCKET_STATE_STOPPED:
             self.state = WEBSOCKET_STATE_STOPPING
