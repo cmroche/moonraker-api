@@ -233,10 +233,7 @@ class WebsocketClient:
                 if msgobj.get("method"):
                     method = msgobj["method"]
                     params = msgobj.get("params")
-                    try:
-                        await self.listener.on_notification(method, params)
-                    except Exception as error:  # pylint: disable=broad-except
-                        _LOGGER.debug("Caught error handling notification %s", error)
+                    self._create_task(self.listener.on_notification(method, params))
 
             elif message.type == WSMsgType.CLOSED:
                 _LOGGER.info("Recived websocket connection gracefully closed message")
