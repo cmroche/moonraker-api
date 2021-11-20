@@ -3,12 +3,13 @@
 # Copyright (C) 2021 Clifford Roche <clifford.roche@gmail.com>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license
+"""Awaitable tasks."""
 from __future__ import annotations
 
 import asyncio
 import logging
 from asyncio.events import AbstractEventLoop
-from typing import Any, Coroutine, Generic, TypeVar, TypedDict
+from typing import Any, Coroutine, Generic, TypeVar
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -50,12 +51,12 @@ class AwaitableTask:
         """Return the current status of our waiting task"""
         return self._result.done()
 
-    async def get_result(self) -> TypedDict:
+    async def get_result(self) -> Any:
         """Return result or request"""
         await self._task
         return self._result.result()
 
-    def set_result(self, result: TypedDict) -> None:
+    def set_result(self, result: Any) -> None:
         """Sets the task as complete"""
         self._result.set_result(result)
 

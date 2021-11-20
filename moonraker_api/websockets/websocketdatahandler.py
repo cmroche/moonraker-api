@@ -5,7 +5,7 @@
 # This file may be distributed under the terms of the GNU GPLv3 license
 
 import logging
-from typing import TypedDict
+from typing import Any
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -15,7 +15,7 @@ class WebsocketDataHandler:
     websocket data
     """
 
-    async def process_data_message(self, _: TypedDict) -> bool:
+    async def process_data_message(self, _: Any) -> bool:
         """Process incoming data message.
 
         Returns: True if message consumed, False othewise

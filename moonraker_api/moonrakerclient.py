@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 from asyncio.events import AbstractEventLoop
-from typing import Any, TypedDict
+from typing import Any
 
 import aiohttp
 
@@ -63,14 +63,14 @@ class MoonrakerClient(WebsocketClient):
         )
         self.supported_modules = []
 
-    async def _loop_recv_internal(self, message: TypedDict) -> None:
+    async def _loop_recv_internal(self, message: Any) -> None:
         """Private method to allow processing if incoming messages"""
         if message.get("result"):
             supported_modules = message["result"].get("objects")
             if supported_modules:
                 self.supported_modules = supported_modules
 
-    async def call_method(self, method: str, **kwargs: Any) -> TypedDict:
+    async def call_method(self, method: str, **kwargs: Any) -> Any:
         """Call a json-rpc method and wait for the response.
 
         Args:
@@ -82,10 +82,10 @@ class MoonrakerClient(WebsocketClient):
         async with self.request(method, **kwargs) as req:
             return await req.get_result()
 
-    async def get_host_info(self) -> TypedDict:
+    async def get_host_info(self) -> Any:
         """Get the connected websocket id."""
         return await self.call_method("printer.info")
 
-    async def get_websocket_id(self) -> TypedDict:
+    async def get_websocket_id(self) -> Any:
         """Get the connected websocket id."""
         return await self.call_method("server.websocket.id")

@@ -14,7 +14,7 @@ from asyncio import Task
 from asyncio.events import AbstractEventLoop
 from asyncio.futures import Future
 from asyncio.tasks import FIRST_COMPLETED
-from typing import Any, Coroutine, TypedDict
+from typing import Any, Coroutine
 
 import aiohttp
 from aiohttp import ClientConnectionError, ClientResponseError, ClientSession, WSMsgType
@@ -53,7 +53,7 @@ class WebsocketRequest(AwaitableTask):
     def __init__(
         self,
         req_id: int,
-        request: TypedDict,
+        request: Any,
         timeout: int = WEBSOCKET_CONNECTION_TIMEOUT,
         loop: AbstractEventLoop = None,
     ) -> None:
@@ -167,9 +167,7 @@ class WebsocketClient:
         self._req_id += 1
         return tx_id
 
-    def _build_websocket_request(
-        self, method: str, **kwargs: Any
-    ) -> tuple[int, TypedDict]:
+    def _build_websocket_request(self, method: str, **kwargs: Any) -> tuple[int, Any]:
         tx_id = self._get_next_tx_id()
         req = {"jsonrpc": "2.0", "method": method, "id": tx_id}
         if kwargs:
@@ -203,7 +201,7 @@ class WebsocketClient:
             self._request(method, **kwargs), self._requests
         )
 
-    async def _loop_recv_internal(self, message: TypedDict) -> None:
+    async def _loop_recv_internal(self, message: Any) -> None:
         """Private method to allow processing if incoming messages"""
 
     async def loop_recv(self, client: ClientWebSocketResponse) -> None:
