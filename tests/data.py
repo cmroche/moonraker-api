@@ -4,6 +4,8 @@
 #
 # This file may be distributed under the terms of the GNU GPLv3 license
 
+"""Test data responses."""
+
 TEST_DATA_UPDATE = {
     "jsonrpc": "2.0",
     "method": "notify_proc_stat_update",
@@ -89,6 +91,27 @@ TEST_DATA_SUPPORTED_MODULES = {
     "id": 0,
 }
 
+TEST_DATA_OBJECTS_QUERY = {
+    "jsonrpc": "2.0",
+    "result": {
+        "eventtime": 578243.57824499,
+        "status": {
+            "gcode_move": {
+                "absolute_coordinates": True,
+                "absolute_extrude": True,
+                "extrude_factor": 1,
+                "gcode_position": [0, 0, 0, 0],
+                "homing_origin": [0, 0, 0, 0],
+                "position": [0, 0, 0, 0],
+                "speed": 1500,
+                "speed_factor": 1,
+            },
+            "toolhead": {"position": [0, 0, 0, 0], "status": "Ready"},
+        },
+    },
+    "id": 0,
+}
+
 TEST_DATA_SIMPLE_RESPONSE = {
     "jsonrpc": "2.0",
     "result": {"res_data": "success"},
@@ -103,4 +126,5 @@ TEST_METHOD_RESPONSES = {
     # Complex test responses (have their own data)
     "printer.info": TEST_DATA_PRINTER_INFO,
     "printer.objects.list": TEST_DATA_SUPPORTED_MODULES,
+    "printer.objects.query": TEST_DATA_OBJECTS_QUERY,
 }

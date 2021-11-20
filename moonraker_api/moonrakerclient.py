@@ -4,6 +4,8 @@
 #
 # This file may be distributed under the terms of the GNU GPLv3 license
 
+"""Moonraker client API."""
+
 import logging
 from asyncio.events import AbstractEventLoop
 from typing import Any
@@ -11,11 +13,8 @@ from typing import Any
 import aiohttp
 
 from moonraker_api.const import WEBSOCKET_CONNECTION_TIMEOUT
-from moonraker_api.modules.printeradministration import PrinterAdminstration
-from moonraker_api.websockets.websocketclient import (
-    WebsocketClient,
-    WebsocketStatusListener,
-)
+from moonraker_api.websockets.websocketclient import (WebsocketClient,
+                                                      WebsocketStatusListener)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -58,23 +57,31 @@ class MoonrakerClient(WebsocketClient):
         WebsocketClient.__init__(
             self, listener, host, port, api_key, ssl, loop, timeout, session
         )
-
-        self.modules = {
-            "printer_administration": PrinterAdminstration(self),
-        }
-
-    @property
-    def authorization(self):
-        """Return ``Authorization`` object"""
-        return self.modules["authorization"]
-
-    @property
-    def printer_administration(self):
-        """Returns ``PrinterAdministation`` object"""
-        return self.modules["printer_administration"]
+        self.supported_modules = []
 
     async def _loop_recv_internal(self, message: Any) -> None:
         """Private method to allow processing if incoming messages"""
-        for module in self.modules.values():
-            if await module.process_data_message(message):
-                break
+        if message.get("result"):
+            supported_modules = message["result"].get("objects")
+            if supported_modules:
+                self.supported_modules = supported_modules
+
+    async def call_method(self, method, **kwargs: Any) -> Any:
+        """Call a json-rpc method and wait for the response.
+
+        Args:
+            **kwargs (optional): Used to pass RPC ``params`` to the call.
+
+        Returns:
+            A ``json`` object containing the ``response`` of the RPC method.
+        """
+        async with self.request(method, **kwargs) as req:
+            return await req.get_result()
+
+    async def get_host_info(self) -> Any:
+        """Get the connected websocket id."""
+        return await self.call_method("printer.info")
+
+    async def get_websocket_id(self) -> Any:
+        """Get the connected websocket id."""
+        return await self.call_method("server.websocket.id")

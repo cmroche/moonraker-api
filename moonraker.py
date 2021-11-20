@@ -1,3 +1,5 @@
+"Moonraker API command line client."
+
 import argparse
 import asyncio
 import logging
@@ -31,9 +33,9 @@ async def main(args):
     await client.connect()
 
     if args.reset:
-        await client.printer_administration.restart()
+        await client.call_method("printer.restart")
     if args.info:
-        await client.printer_administration.info()
+        await client.call_method("printer.info")
 
 
 if __name__ == "__main__":

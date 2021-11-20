@@ -14,18 +14,18 @@ from asyncio.tasks import FIRST_COMPLETED
 from typing import Any, Coroutine, Dict, List
 
 import aiohttp
-from aiohttp import ClientConnectionError, ClientResponseError, ClientSession, WSMsgType
+from aiohttp import (ClientConnectionError, ClientResponseError, ClientSession,
+                     WSMsgType)
 from aiohttp.client_ws import ClientWebSocketResponse
 
-from moonraker_api.const import (
-    WEBSOCKET_CONNECTION_TIMEOUT,
-    WEBSOCKET_STATE_CONNECTED,
-    WEBSOCKET_STATE_CONNECTING,
-    WEBSOCKET_STATE_READY,
-    WEBSOCKET_STATE_STOPPED,
-    WEBSOCKET_STATE_STOPPING,
-)
-from moonraker_api.websockets.awaitabletask import AwaitableTask, AwaitableTaskContext
+from moonraker_api.const import (WEBSOCKET_CONNECTION_TIMEOUT,
+                                 WEBSOCKET_STATE_CONNECTED,
+                                 WEBSOCKET_STATE_CONNECTING,
+                                 WEBSOCKET_STATE_READY,
+                                 WEBSOCKET_STATE_STOPPED,
+                                 WEBSOCKET_STATE_STOPPING)
+from moonraker_api.websockets.awaitabletask import (AwaitableTask,
+                                                    AwaitableTaskContext)
 
 _LOGGER = logging.getLogger(__name__)
 
