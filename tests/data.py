@@ -112,6 +112,12 @@ TEST_DATA_OBJECTS_QUERY = {
     "id": 0,
 }
 
+TEST_DATA_SIMPLE_NOTIFICATION = {
+    "jsonrpc": "2.0",
+    "method": "notify_gcode_response",
+    "params": ["response message"],
+}
+
 TEST_DATA_SIMPLE_RESPONSE = {
     "jsonrpc": "2.0",
     "result": {"res_data": "success"},
@@ -127,4 +133,6 @@ TEST_METHOD_RESPONSES = {
     "printer.info": TEST_DATA_PRINTER_INFO,
     "printer.objects.list": TEST_DATA_SUPPORTED_MODULES,
     "printer.objects.query": TEST_DATA_OBJECTS_QUERY,
+    # Special cases to assist testing
+    "testing.send_gcode_response": TEST_DATA_SIMPLE_RESPONSE,
 }

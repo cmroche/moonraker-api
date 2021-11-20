@@ -214,3 +214,26 @@ async def test_args_rpc_api(aiohttp_server, moonraker, method, args):
 
     await moonraker.disconnect()
     assert not moonraker.is_connected
+
+
+@pytest.mark.skip(reason="Not implemented yet")
+@pytest.mark.parametrize(
+    "method",
+    ["testing.send_gcode_response"],
+)
+async def test_subscribe_rpc_api(aiohttp_server, moonraker, method):
+    """Test RPC call with argument passing."""
+    await create_moonraker_service(aiohttp_server)
+
+    await moonraker.connect()
+    assert moonraker.is_connected
+    response = await moonraker.call_method(method)
+
+    # Subscribe to updates
+    assert response is not None
+    assert response == TEST_DATA_SIMPLE_RESPONSE["result"]
+
+    # Check that responses are received
+
+    await moonraker.disconnect()
+    assert not moonraker.is_connected
