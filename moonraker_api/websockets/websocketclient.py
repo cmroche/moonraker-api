@@ -214,15 +214,16 @@ class WebsocketClient:
 
                 # Look for incoming RPC responses, and match to
                 # their outstanding tasks
-                if msgobj.get("result"):
-                    res_id = msgobj.get("id")
-                    if res_id:
-                        req = self._requests.get(res_id)
-                        if req:
-                            req.set_result(msgobj["result"])
-                    if self.state == WEBSOCKET_STATE_CONNECTED:
-                        if msgobj["result"].get("objects"):
-                            self.state = WEBSOCKET_STATE_READY
+                res_id = msgobj.get("id")
+                if res_id:
+                    req = self._requests.get(res_id)
+                    if req and "result" in msgobj:
+                        req.set_result(msgobj["result"])
+                    elif req and "error" in msgobj:
+                        req.set_result({"error": msgobj["error"]})
+                if self.state == WEBSOCKET_STATE_CONNECTED:
+                    if msgobj["result"].get("objects"):
+                        self.state = WEBSOCKET_STATE_READY
 
                 # Dispatch messages to modules
                 if await self._loop_recv_internal(msgobj):
