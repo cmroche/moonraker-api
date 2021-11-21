@@ -1,7 +1,7 @@
 {
     "python.linting.enabled": true,
     "python.linting.lintOnSave": true,
-    "python.linting.flake8Enabled": true,
+    "python.linting.flake8Enabled": false,
     "python.pythonPath": "/usr/local/bin/python",
     "python.testing.unittestArgs": [
         "-v",
@@ -16,4 +16,5 @@
     "python.testing.pytestArgs": [
         "tests"
     ],
+    "python.linting.pylintEnabled": true,
 }
