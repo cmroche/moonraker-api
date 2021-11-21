@@ -1,3 +1,21 @@
+# [2.0.0](https://github.com/cmroche/moonraker-api/compare/v1.0.0...v2.0.0) (2021-11-21)
+
+
+### Bug Fixes
+
+* Improve ready state detection ([918d9e1](https://github.com/cmroche/moonraker-api/commit/918d9e189c22c912283fffad8db81c0af5d81e49))
+* Use random transaction ID ([23dec7f](https://github.com/cmroche/moonraker-api/commit/23dec7fbf5ea1a52221947847ac7b80a0f29fd58))
+
+
+### Features
+
+* Remove WEBSOCKET_STATE_READY ([f9d2875](https://github.com/cmroche/moonraker-api/commit/f9d287599d016ee78faad60634c4ba8239b8a951))
+
+
+### BREAKING CHANGES
+
+* Readyness is no longer considered a websocket state and should be determined by checking the klipper status
+
 # 1.0.0 (2021-11-21)
 
 
