@@ -8,7 +8,7 @@ with open("requirements.txt") as f:
 
 setuptools.setup(
     name="moonraker-api",
-    version="0.0.1",
+    version="0.1.0",
     python_requires=">=3.8",
     install_requires=requirements,
     author="Clifford Roche",
