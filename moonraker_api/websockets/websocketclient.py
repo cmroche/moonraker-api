@@ -14,6 +14,7 @@ from asyncio import Task
 from asyncio.events import AbstractEventLoop
 from asyncio.futures import Future
 from asyncio.tasks import FIRST_COMPLETED
+from random import randint
 from typing import Any, Coroutine
 
 import aiohttp
@@ -24,7 +25,6 @@ from moonraker_api.const import (
     WEBSOCKET_CONNECTION_TIMEOUT,
     WEBSOCKET_STATE_CONNECTED,
     WEBSOCKET_STATE_CONNECTING,
-    WEBSOCKET_STATE_READY,
     WEBSOCKET_STATE_STOPPED,
     WEBSOCKET_STATE_STOPPING,
 )
@@ -118,7 +118,6 @@ class WebsocketClient:
         self._state = WEBSOCKET_STATE_STOPPED
         self._retries = 0
         self._tasks = []
-        self._req_id = 0
 
         self._runtask: Task = None
         self._requests_pending = asyncio.Queue()
@@ -163,9 +162,7 @@ class WebsocketClient:
         return f"{protocol}{self.host}:{self.port}/websocket"
 
     def _get_next_tx_id(self) -> int:
-        tx_id = self._req_id
-        self._req_id += 1
-        return tx_id
+        return randint(1, 999999)
 
     def _build_websocket_request(self, method: str, **kwargs: Any) -> tuple[int, Any]:
         tx_id = self._get_next_tx_id()
@@ -177,7 +174,7 @@ class WebsocketClient:
     @property
     def is_connected(self) -> bool:
         """Return True when the websocket is connected"""
-        return self.state in [WEBSOCKET_STATE_CONNECTED, WEBSOCKET_STATE_READY]
+        return self.state == WEBSOCKET_STATE_CONNECTED
 
     async def _request(self, method: str, **kwargs: Any) -> WebsocketRequest:
         req_id, data = self._build_websocket_request(method, **kwargs)
@@ -221,9 +218,6 @@ class WebsocketClient:
                         req.set_result(msgobj["result"])
                     elif req and "error" in msgobj:
                         req.set_result({"error": msgobj["error"]})
-                if self.state == WEBSOCKET_STATE_CONNECTED:
-                    if msgobj["result"].get("objects"):
-                        self.state = WEBSOCKET_STATE_READY
 
                 # Dispatch messages to modules
                 if await self._loop_recv_internal(msgobj):
@@ -286,12 +280,6 @@ class WebsocketClient:
                     self._ws = websocket
                     self.state = WEBSOCKET_STATE_CONNECTED
                     conn_event.set_result(True)
-
-                    # This request should probably be moved into
-                    # printer administration and respond to a connected
-                    # event to remove knowledge of API specifics from this class
-                    _, data = self._build_websocket_request("printer.objects.list")
-                    await websocket.send_json(data)
 
                     # Start the send/recv routines
                     done, unfinished = await asyncio.wait(

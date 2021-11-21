@@ -10,9 +10,10 @@ from __future__ import annotations
 
 import logging
 from asyncio.events import AbstractEventLoop
-from typing import Any
+from typing import Any, Literal
 
 import aiohttp
+from aiohttp.web_response import Response
 
 from moonraker_api.const import WEBSOCKET_CONNECTION_TIMEOUT
 from moonraker_api.websockets.websocketclient import (
@@ -61,14 +62,10 @@ class MoonrakerClient(WebsocketClient):
         WebsocketClient.__init__(
             self, listener, host, port, api_key, ssl, loop, timeout, session
         )
-        self.supported_modules = []
 
     async def _loop_recv_internal(self, message: Any) -> None:
         """Private method to allow processing if incoming messages"""
-        if message.get("result"):
-            supported_modules = message["result"].get("objects")
-            if supported_modules:
-                self.supported_modules = supported_modules
+        # Empty for the moment
 
     async def call_method(self, method: str, **kwargs: Any) -> Any:
         """Call a json-rpc method and wait for the response.
@@ -85,6 +82,22 @@ class MoonrakerClient(WebsocketClient):
     async def get_host_info(self) -> Any:
         """Get the connected websocket id."""
         return await self.call_method("printer.info")
+
+    async def get_server_info(self) -> Any:
+        """Get the connected websocket id."""
+        return await self.call_method("server.info")
+
+    async def get_supported_modules(self) -> list[str] | None:
+        """Get supported modules from Klipper."""
+        response = await self.call_method("printer.objects.list")
+        if "objects" in response:
+            return response["objects"]
+        return None
+
+    async def get_klipper_status(self) -> Literal["ready", "shutdown", "disconnected"]:
+        """Returns the current status of klipper."""
+        info = await self.call_method("server.info")
+        return info["klippy_state"]
 
     async def get_websocket_id(self) -> Any:
         """Get the connected websocket id."""
