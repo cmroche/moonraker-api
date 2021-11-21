@@ -25,7 +25,6 @@ from moonraker_api.const import (
     WEBSOCKET_CONNECTION_TIMEOUT,
     WEBSOCKET_STATE_CONNECTED,
     WEBSOCKET_STATE_CONNECTING,
-    WEBSOCKET_STATE_READY,
     WEBSOCKET_STATE_STOPPED,
     WEBSOCKET_STATE_STOPPING,
 )
@@ -175,7 +174,7 @@ class WebsocketClient:
     @property
     def is_connected(self) -> bool:
         """Return True when the websocket is connected"""
-        return self.state in [WEBSOCKET_STATE_CONNECTED, WEBSOCKET_STATE_READY]
+        return self.state == WEBSOCKET_STATE_CONNECTED
 
     async def _request(self, method: str, **kwargs: Any) -> WebsocketRequest:
         req_id, data = self._build_websocket_request(method, **kwargs)

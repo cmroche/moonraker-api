@@ -162,12 +162,21 @@ async def test_support_modules(aiohttp_server, moonraker):
     await create_moonraker_service_looping(aiohttp_server)
 
     await moonraker.connect()
-    await asyncio.sleep(2)  # Command is exeptionally auto-propagated
+    supported_modules = await moonraker.get_supported_modules()
     await moonraker.disconnect()
 
-    assert (
-        moonraker.supported_modules == TEST_DATA_SUPPORTED_MODULES["result"]["objects"]
-    )
+    assert supported_modules == TEST_DATA_SUPPORTED_MODULES["result"]["objects"]
+
+
+async def test_service_status(aiohttp_server, moonraker):
+    """Test getting the supported modules from the API"""
+    await create_moonraker_service_looping(aiohttp_server)
+
+    await moonraker.connect()
+    status = await moonraker.get_klipper_status()
+    await moonraker.disconnect()
+
+    assert status == "ready"
 
 
 @pytest.mark.parametrize(
