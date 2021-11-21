@@ -14,6 +14,7 @@ from asyncio import Task
 from asyncio.events import AbstractEventLoop
 from asyncio.futures import Future
 from asyncio.tasks import FIRST_COMPLETED
+from random import randint
 from typing import Any, Coroutine
 
 import aiohttp
@@ -118,7 +119,6 @@ class WebsocketClient:
         self._state = WEBSOCKET_STATE_STOPPED
         self._retries = 0
         self._tasks = []
-        self._req_id = 0
 
         self._runtask: Task = None
         self._requests_pending = asyncio.Queue()
@@ -163,9 +163,7 @@ class WebsocketClient:
         return f"{protocol}{self.host}:{self.port}/websocket"
 
     def _get_next_tx_id(self) -> int:
-        tx_id = self._req_id
-        self._req_id += 1
-        return tx_id
+        return randint(1, 999999)
 
     def _build_websocket_request(self, method: str, **kwargs: Any) -> tuple[int, Any]:
         tx_id = self._get_next_tx_id()
