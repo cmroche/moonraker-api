@@ -39,36 +39,53 @@ jobs:
     - uses: codecov/codecov-action@v1
       with:
         file: ./coverage.xml
-
   publish:
+    name: Publish to Github & NPM or Github Package Registry
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-
-      - name: Semantic Release Action
-        uses: codfish/semantic-release-action@additional-packages
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
         with:
-          dry_run: True
-          branches: |
-            [
-              '+([0-9])?(.{+([0-9]),x}).x',
-              'main',
-              'next',
-              'next-major',
-              {
-                name: 'beta',
-                prerelease: true
-              },
-              {
-                name: 'alpha',
-                prerelease: true
-              }
-            ]
-          additional_packages: |
-            ['semantic-release-pypi']
-          plugins: |
-            ['@semantic-release/commit-analyzer', '@semantic-release/release-notes-generator', 'semantic-release-pypi', '@semantic-release/github']
+          node-version: 14
+      - env:
+          CI: true
+        run: npm ci
+      - if: success()
         env:
+          CI: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
           PYPI_USER: ${{ secrets.PYPI_USER }}
+        run: npx semantic-release
+  # publish:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+
+  #     - name: Semantic Release Action
+  #       uses: codfish/semantic-release-action@additional-packages
+  #       with:
+  #         dry_run: True
+  #         branches: |
+  #           [
+  #             '+([0-9])?(.{+([0-9]),x}).x',
+  #             'main',
+  #             'next',
+  #             'next-major',
+  #             {
+  #               name: 'beta',
+  #               prerelease: true
+  #             },
+  #             {
+  #               name: 'alpha',
+  #               prerelease: true
+  #             }
+  #           ]
+  #         additional_packages: |
+  #           ['semantic-release-pypi']
+  #         plugins: |
+  #           ['@semantic-release/commit-analyzer', '@semantic-release/release-notes-generator', 'semantic-release-pypi', '@semantic-release/github']
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #         PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+  #         PYPI_USER: ${{ secrets.PYPI_USER }}
