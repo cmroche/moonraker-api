@@ -112,6 +112,36 @@ TEST_DATA_OBJECTS_QUERY = {
     "id": 0,
 }
 
+TEST_DATA_SERVER_INFO_RESPONSE = {
+    "jsonrpc": "2.0",
+    "result": {
+        "klippy_connected": True,
+        "klippy_state": "ready",
+        "components": [
+            "database",
+            "file_manager",
+            "klippy_apis",
+            "machine",
+            "data_store",
+            "shell_command",
+            "proc_stats",
+            "history",
+            "octoprint_compat",
+            "update_manager",
+            "power",
+        ],
+        "failed_components": [],
+        "registered_directories": ["config", "gcodes", "config_examples", "docs"],
+        "warnings": [
+            "Invalid config option 'api_key_path' detected in section [authorization]. Remove the option to resolve this issue. In the future this will result in a startup error.",
+            "Unparsed config section [fake_section] detected.  This may be the result of a component that failed to load.  In the future this will result in a startup error.",
+        ],
+        "websocket_count": 2,
+        "moonraker_version": "v0.7.1-105-ge4f103c",
+    },
+    "id": 0,
+}
+
 TEST_DATA_SIMPLE_NOTIFICATION = {
     "jsonrpc": "2.0",
     "method": "notify_gcode_response",
@@ -133,6 +163,7 @@ TEST_METHOD_RESPONSES = {
     "printer.info": TEST_DATA_PRINTER_INFO,
     "printer.objects.list": TEST_DATA_SUPPORTED_MODULES,
     "printer.objects.query": TEST_DATA_OBJECTS_QUERY,
+    "server.info": TEST_DATA_SERVER_INFO_RESPONSE,
     # Special cases to assist testing
     "testing.send_gcode_response": TEST_DATA_SIMPLE_RESPONSE,
 }

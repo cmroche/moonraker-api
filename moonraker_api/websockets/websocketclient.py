@@ -219,9 +219,6 @@ class WebsocketClient:
                         req.set_result(msgobj["result"])
                     elif req and "error" in msgobj:
                         req.set_result({"error": msgobj["error"]})
-                if self.state == WEBSOCKET_STATE_CONNECTED:
-                    if msgobj["result"].get("objects"):
-                        self.state = WEBSOCKET_STATE_READY
 
                 # Dispatch messages to modules
                 if await self._loop_recv_internal(msgobj):
@@ -284,12 +281,6 @@ class WebsocketClient:
                     self._ws = websocket
                     self.state = WEBSOCKET_STATE_CONNECTED
                     conn_event.set_result(True)
-
-                    # This request should probably be moved into
-                    # printer administration and respond to a connected
-                    # event to remove knowledge of API specifics from this class
-                    _, data = self._build_websocket_request("printer.objects.list")
-                    await websocket.send_json(data)
 
                     # Start the send/recv routines
                     done, unfinished = await asyncio.wait(

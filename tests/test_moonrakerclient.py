@@ -89,7 +89,7 @@ async def test_connect_unauthorized(aiohttp_server, moonraker):
 
 async def test_api_request(aiohttp_server, moonraker):
     """Test sending a request and waiting on a response"""
-    await create_moonraker_service(aiohttp_server)
+    await create_moonraker_service_looping(aiohttp_server)
 
     await moonraker.connect()
     await moonraker.get_host_info()
@@ -98,7 +98,7 @@ async def test_api_request(aiohttp_server, moonraker):
 
 async def test_api_request_disconnect(aiohttp_server, moonraker):
     """Test server hangup after request"""
-    await create_moonraker_service(aiohttp_server, disconnect=True)
+    await create_moonraker_service_looping(aiohttp_server, disconnect=True)
 
     await moonraker.connect()
     with pytest.raises(asyncio.CancelledError):
@@ -118,7 +118,7 @@ async def test_api_request_timeout(aiohttp_server, moonraker):
 
 async def test_api_request_not_connected(aiohttp_server, moonraker):
     """Test sending a request before we are connected to the server"""
-    await create_moonraker_service(aiohttp_server)
+    await create_moonraker_service_looping(aiohttp_server)
 
     with pytest.raises(ClientNotConnectedError):
         await moonraker.get_host_info()
@@ -180,7 +180,7 @@ async def test_support_modules(aiohttp_server, moonraker):
 )
 async def test_simple_rpc_apis(aiohttp_server, moonraker, method):
     """Test RPC method calls"""
-    await create_moonraker_service(aiohttp_server)
+    await create_moonraker_service_looping(aiohttp_server)
 
     await moonraker.connect()
     assert moonraker.is_connected
@@ -203,7 +203,7 @@ async def test_simple_rpc_apis(aiohttp_server, moonraker, method):
 )
 async def test_args_rpc_api(aiohttp_server, moonraker, method, args):
     """Test RPC call with argument passing."""
-    await create_moonraker_service(aiohttp_server)
+    await create_moonraker_service_looping(aiohttp_server)
 
     await moonraker.connect()
     assert moonraker.is_connected
@@ -223,7 +223,7 @@ async def test_args_rpc_api(aiohttp_server, moonraker, method, args):
 )
 async def test_subscribe_rpc_api(aiohttp_server, moonraker, method):
     """Test RPC call with argument passing."""
-    await create_moonraker_service(aiohttp_server)
+    await create_moonraker_service_looping(aiohttp_server)
 
     await moonraker.connect()
     assert moonraker.is_connected
