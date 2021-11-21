@@ -1,4 +1,4 @@
-![Python package](https://github.com/cmroche/moonraker_api/workflows/Python%20package/badge.svg)
+![Python package](https://github.com/cmroche/moonraker-api/workflows/Python%20package/badge.svg)
 
 ## Moonracker Websocket API Client
 
