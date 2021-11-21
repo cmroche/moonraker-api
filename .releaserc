@@ -9,8 +9,8 @@ branches:
   - name: alpha # format: vN.N.N-alpha.N
     prerelease: true
 ci: true
-dryRun: true
-debug: true
+dryRun: false
+debug: false
 plugins:
   - - '@semantic-release/commit-analyzer'
     - preset: angular
