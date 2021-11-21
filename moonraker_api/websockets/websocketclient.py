@@ -121,7 +121,7 @@ class WebsocketClient:
         self._req_id = 0
 
         self._runtask: Task = None
-        self._requests_pending = asyncio.Queue[WebsocketRequest]()
+        self._requests_pending = asyncio.Queue()
         self._requests: dict[int, WebsocketRequest] = {}
 
     def _task_done_callback(self, task) -> None:
