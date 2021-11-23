@@ -262,6 +262,8 @@ class WebsocketClient:
 
         async def set_exception(exception: BaseException) -> None:
             """Sets an exception received by the run loop"""
+            if not conn_event.done():
+                conn_event.set_exception(exception)
             for req in self._requests.values():
                 if not req.done():
                     req.set_exception(exception)
@@ -298,15 +300,15 @@ class WebsocketClient:
 
             except ClientResponseError as error:
                 _LOGGER.warning("Websocket request error: %s", error)
-                await set_exception(error)
                 if error.code == 401:
                     _LOGGER.error("API access is unauthorized")
                     self.state = WEBSOCKET_STATE_STOPPING
-                    if not conn_event.done():
-                        conn_event.set_exception(ClientNotAuthenticatedError)
+                    await set_exception(error)
+                else:
                     await set_exception(error)
             except ClientConnectionError as error:
                 await set_exception(error)
+
                 _LOGGER.error("Websocket connection error: %s", error)
             except asyncio.TimeoutError as error:
                 await set_exception(error)
