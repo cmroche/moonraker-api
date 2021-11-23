@@ -251,12 +251,14 @@ class WebsocketClient:
             finally:
                 self._requests_pending.task_done()
 
-    async def _run(self, conn_event: Future) -> None:
+    async def _run(self, conn_event: Future | None) -> None:
         """Start the websocket connection and run the update loop.
 
         Args:
             conn_event (Event): This event is set once the connection is complete
         """
+        if not conn_event:
+            conn_event = self._loop.create_future()
         if not self.session:
             self.session = ClientSession(loop=self._loop)
 
@@ -303,7 +305,7 @@ class WebsocketClient:
                 if error.code == 401:
                     _LOGGER.error("API access is unauthorized")
                     self.state = WEBSOCKET_STATE_STOPPING
-                    await set_exception(error)
+                    await set_exception(ClientNotAuthenticatedError)
                 else:
                     await set_exception(error)
             except ClientConnectionError as error:
@@ -339,11 +341,13 @@ class WebsocketClient:
         if self._runtask and not self._runtask.done():
             raise ClientAlreadyConnectedError()
 
-        conn_event = self._loop.create_future()
         self.state = WEBSOCKET_STATE_CONNECTING
-        self._runtask = self._loop.create_task(self._run(conn_event))
         if blocking:
+            conn_event = self._loop.create_future()
+            self._runtask = self._loop.create_task(self._run(conn_event))
             await asyncio.wait_for(conn_event, self._timeout)
+        else:
+            self._runtask = self._loop.create_task(self._run(None))
 
         return self.is_connected
 
