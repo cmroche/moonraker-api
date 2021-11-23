@@ -251,14 +251,12 @@ class WebsocketClient:
             finally:
                 self._requests_pending.task_done()
 
-    async def _run(self, conn_event: Future | None) -> None:
+    async def _run(self, conn_event: Future) -> None:
         """Start the websocket connection and run the update loop.
 
         Args:
             conn_event (Event): This event is set once the connection is complete
         """
-        if not conn_event:
-            conn_event = self._loop.create_future()
         if not self.session:
             self.session = ClientSession(loop=self._loop)
 
@@ -327,27 +325,19 @@ class WebsocketClient:
                     req.cancel()
                 self.state = WEBSOCKET_STATE_STOPPED
 
-    async def connect(self, blocking: bool = True) -> bool:
+    async def connect(self) -> bool:
         """Start the run loop and connect
 
-        Args:
-            blocking (bool, optional): Default to `True`, waits for the
-            connection to complete or timeout before returning.
-
         Returns:
-            A ``boolean`` indicating if the connection succeeded, if
-            ``blocking`` is False this will return False.
+            A ``boolean`` indicating if the connection succeeded.
         """
         if self._runtask and not self._runtask.done():
             raise ClientAlreadyConnectedError()
 
         self.state = WEBSOCKET_STATE_CONNECTING
-        if blocking:
-            conn_event = self._loop.create_future()
-            self._runtask = self._loop.create_task(self._run(conn_event))
-            await asyncio.wait_for(conn_event, self._timeout)
-        else:
-            self._runtask = self._loop.create_task(self._run(None))
+        conn_event = self._loop.create_future()
+        self._runtask = self._loop.create_task(self._run(conn_event))
+        await asyncio.wait_for(conn_event, self._timeout)
 
         return self.is_connected
 
