@@ -1,3 +1,12 @@
+## [2.0.1](https://github.com/cmroche/moonraker-api/compare/v2.0.0...v2.0.1) (2021-11-26)
+
+
+### Bug Fixes
+
+* Check event even when not blocking ([f7a1cb5](https://github.com/cmroche/moonraker-api/commit/f7a1cb51d5c87aaed0171503e9da811a8b1783ad))
+* No longer allow non-blocking ([3f66cb9](https://github.com/cmroche/moonraker-api/commit/3f66cb9dc8424d75ce457924b6400fccbd25cfae))
+* Pass exceptions to connect ([14bc667](https://github.com/cmroche/moonraker-api/commit/14bc6675c8c87be492dd8caa394a1c4736a14dea))
+
 # [2.0.0](https://github.com/cmroche/moonraker-api/compare/v1.0.0...v2.0.0) (2021-11-21)
 
 
