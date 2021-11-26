@@ -262,6 +262,8 @@ class WebsocketClient:
 
         async def set_exception(exception: BaseException) -> None:
             """Sets an exception received by the run loop"""
+            if not conn_event.done():
+                conn_event.set_exception(exception)
             for req in self._requests.values():
                 if not req.done():
                     req.set_exception(exception)
@@ -298,15 +300,15 @@ class WebsocketClient:
 
             except ClientResponseError as error:
                 _LOGGER.warning("Websocket request error: %s", error)
-                await set_exception(error)
                 if error.code == 401:
                     _LOGGER.error("API access is unauthorized")
                     self.state = WEBSOCKET_STATE_STOPPING
-                    if not conn_event.done():
-                        conn_event.set_exception(ClientNotAuthenticatedError)
+                    await set_exception(ClientNotAuthenticatedError)
+                else:
                     await set_exception(error)
             except ClientConnectionError as error:
                 await set_exception(error)
+
                 _LOGGER.error("Websocket connection error: %s", error)
             except asyncio.TimeoutError as error:
                 await set_exception(error)
@@ -323,25 +325,19 @@ class WebsocketClient:
                     req.cancel()
                 self.state = WEBSOCKET_STATE_STOPPED
 
-    async def connect(self, blocking: bool = True) -> bool:
+    async def connect(self) -> bool:
         """Start the run loop and connect
 
-        Args:
-            blocking (bool, optional): Default to `True`, waits for the
-            connection to complete or timeout before returning.
-
         Returns:
-            A ``boolean`` indicating if the connection succeeded, if
-            ``blocking`` is False this will return False.
+            A ``boolean`` indicating if the connection succeeded.
         """
         if self._runtask and not self._runtask.done():
             raise ClientAlreadyConnectedError()
 
-        conn_event = self._loop.create_future()
         self.state = WEBSOCKET_STATE_CONNECTING
+        conn_event = self._loop.create_future()
         self._runtask = self._loop.create_task(self._run(conn_event))
-        if blocking:
-            await asyncio.wait_for(conn_event, self._timeout)
+        await asyncio.wait_for(conn_event, self._timeout)
 
         return self.is_connected
 
