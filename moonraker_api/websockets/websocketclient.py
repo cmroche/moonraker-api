@@ -124,8 +124,10 @@ class WebsocketClient:
         self._requests: dict[int, WebsocketRequest] = {}
 
     def _task_done_callback(self, task) -> None:
-        if task.exception():
-            _LOGGER.exception("Uncaught exception", exc_info=task.exception())
+        try:
+            task.exception()
+        except Exception as error:
+            _LOGGER.exception("Uncaught exception", exc_info=error)
         self._tasks.remove(task)
 
     def _create_task(self, coro) -> Task:
