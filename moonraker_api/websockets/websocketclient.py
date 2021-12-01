@@ -230,7 +230,7 @@ class WebsocketClient:
                     self._create_task(self.listener.on_notification(method, params))
 
             elif message.type == WSMsgType.CLOSED:
-                _LOGGER.info("Recived websocket connection gracefully closed message")
+                _LOGGER.info("Received websocket connection gracefully closed message")
                 break
             elif message.type == WSMsgType.ERROR:
                 _LOGGER.info("Received websocket connection error message")
