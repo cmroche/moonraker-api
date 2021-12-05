@@ -1,3 +1,10 @@
+## [2.0.3](https://github.com/cmroche/moonraker-api/compare/v2.0.2...v2.0.3) (2021-12-05)
+
+
+### Bug Fixes
+
+* Add websocket receive timeout ([9cbe0ed](https://github.com/cmroche/moonraker-api/commit/9cbe0edbbcd5d77d55631c0915aa6ef8e232b580))
+
 ## [2.0.2](https://github.com/cmroche/moonraker-api/compare/v2.0.1...v2.0.2) (2021-12-01)
 
 
