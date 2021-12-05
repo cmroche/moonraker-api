@@ -1,3 +1,10 @@
+## [2.0.4](https://github.com/cmroche/moonraker-api/compare/v2.0.3...v2.0.4) (2021-12-05)
+
+
+### Bug Fixes
+
+* Use aiohttp provided receive timeout. ([e5fffd1](https://github.com/cmroche/moonraker-api/commit/e5fffd1562eea26c02f6c496d3decc3490290bb7))
+
 ## [2.0.3](https://github.com/cmroche/moonraker-api/compare/v2.0.2...v2.0.3) (2021-12-05)
 
 
