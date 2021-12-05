@@ -20,6 +20,7 @@ from typing import Any, Coroutine
 import aiohttp
 from aiohttp import ClientConnectionError, ClientResponseError, ClientSession, WSMsgType
 from aiohttp.client_ws import ClientWebSocketResponse
+from async_timeout import timeout as async_timeout
 
 from moonraker_api.const import (
     WEBSOCKET_CONNECTION_TIMEOUT,
@@ -206,37 +207,38 @@ class WebsocketClient:
     async def loop_recv(self, client: ClientWebSocketResponse) -> None:
         """Run the websocket connection and process send/receive
         of messages"""
-        async for message in client:
-            _LOGGER.debug("Received message: %s", message)
-            if message.type == WSMsgType.TEXT:
-                msgobj = message.json()
+        with async_timeout(self._timeout):
+            async for message in client:
+                _LOGGER.debug("Received message: %s", message)
+                if message.type == WSMsgType.TEXT:
+                    msgobj = message.json()
 
-                # Look for incoming RPC responses, and match to
-                # their outstanding tasks
-                res_id = msgobj.get("id")
-                if res_id:
-                    req = self._requests.get(res_id)
-                    if req and "result" in msgobj:
-                        req.set_result(msgobj["result"])
-                    elif req and "error" in msgobj:
-                        req.set_result({"error": msgobj["error"]})
+                    # Look for incoming RPC responses, and match to
+                    # their outstanding tasks
+                    res_id = msgobj.get("id")
+                    if res_id:
+                        req = self._requests.get(res_id)
+                        if req and "result" in msgobj:
+                            req.set_result(msgobj["result"])
+                        elif req and "error" in msgobj:
+                            req.set_result({"error": msgobj["error"]})
 
-                # Dispatch messages to modules
-                if await self._loop_recv_internal(msgobj):
-                    continue
+                    # Dispatch messages to modules
+                    if await self._loop_recv_internal(msgobj):
+                        continue
 
-                # Finally, dispatch notifications
-                if msgobj.get("method"):
-                    method = msgobj["method"]
-                    params = msgobj.get("params")
-                    self._create_task(self.listener.on_notification(method, params))
+                    # Finally, dispatch notifications
+                    if msgobj.get("method"):
+                        method = msgobj["method"]
+                        params = msgobj.get("params")
+                        self._create_task(self.listener.on_notification(method, params))
 
-            elif message.type == WSMsgType.CLOSED:
-                _LOGGER.info("Received websocket connection gracefully closed message")
-                break
-            elif message.type == WSMsgType.ERROR:
-                _LOGGER.info("Received websocket connection error message")
-                break
+                elif message.type == WSMsgType.CLOSED:
+                    _LOGGER.info("Received websocket connection gracefully closed message")
+                    break
+                elif message.type == WSMsgType.ERROR:
+                    _LOGGER.info("Received websocket connection error message")
+                    break
 
     async def loop_send(self, client: ClientWebSocketResponse) -> None:
         """Run the websocket request queue"""
