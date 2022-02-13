@@ -1,3 +1,10 @@
+## [2.0.5](https://github.com/cmroche/moonraker-api/compare/v2.0.4...v2.0.5) (2022-02-13)
+
+
+### Bug Fixes
+
+* Push new package with version ([21745a5](https://github.com/cmroche/moonraker-api/commit/21745a54384f9f22bc73abc7fe6b56c0c9198a3e))
+
 ## [2.0.4](https://github.com/cmroche/moonraker-api/compare/v2.0.3...v2.0.4) (2021-12-05)
 
 
