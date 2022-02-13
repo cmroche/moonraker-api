@@ -7,7 +7,7 @@ import json
 
 from aiohttp import WSMsgType, web
 from aiohttp.web_exceptions import HTTPClientError
-from pytest_aiohttp import aiohttp_server
+from pytest_aiohttp.plugin import aiohttp_server
 
 from tests.data import TEST_METHOD_RESPONSES
 
