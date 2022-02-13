@@ -60,7 +60,7 @@ class APIConnector(MoonrakerListener):
             pass
         elif state == WEBSOCKET_STATE_READY:
             pass
-        elif state == WEBSOCKET_STATE_PASSED:
+        elif state == WEBSOCKET_STATE_PAUSED:
             pass
         elif state == WEBSOCKET_STATE_STOPPED:
             pass
