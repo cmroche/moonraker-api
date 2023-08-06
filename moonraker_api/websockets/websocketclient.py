@@ -306,7 +306,7 @@ class WebsocketClient:
 
             except ClientResponseError as error:
                 _LOGGER.warning("Websocket request error: %s", error)
-                if error.code == 401:
+                if error.status == 401:
                     _LOGGER.error("API access is unauthorized")
                     self.state = WEBSOCKET_STATE_STOPPING
                     await set_exception(ClientNotAuthenticatedError)
