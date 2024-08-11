@@ -1,7 +1,7 @@
 {
-  "name": "moonraker-api-release",
+  "name": "greeclimate-release",
   "version": "1.0.0",
-  "description": "![Python package](https://github.com/cmroche/moonraker_api/workflows/Python%20package/badge.svg)",
+  "description": "![Python package](https://github.com/cmroche/greeclimate/workflows/Python%20package/badge.svg)",
   "main": "index.js",
   "directories": {
     "test": "tests"
@@ -11,21 +11,22 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cmroche/moonraker-api.git"
+    "url": "git+https://github.com/cmroche/greeclimate.git"
   },
   "author": "Clifford Roche",
   "license": "GPL-3.0-or-later",
   "bugs": {
-    "url": "https://github.com/cmroche/moonraker-api/issues"
+    "url": "https://github.com/cmroche/greeclimate/issues"
   },
-  "homepage": "https://github.com/cmroche/moonraker-api#readme",
+  "homepage": "https://github.com/cmroche/greeclimate#readme",
   "dependencies": {
-    "@semantic-release/changelog": "^6.0.1",
-    "@semantic-release/commit-analyzer": "^9.0.1",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/commit-analyzer": "^13.0.0",
     "@semantic-release/git": "^10.0.1",
-    "@semantic-release/github": "^8.0.2",
-    "@semantic-release/release-notes-generator": "^10.0.2",
-    "semantic-release": "^18.0.0",
-    "semantic-release-pypi": "^2.4.3"
+    "@semantic-release/github": "^10.0.6",
+    "@semantic-release/release-notes-generator": "^14.0.1",
+    "semantic-release": "^24.0.0",
+    "semantic-release-pypi": "^3.0.1"
   }
 }
+
