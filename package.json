@@ -1,7 +1,7 @@
 {
-  "name": "greeclimate-release",
+  "name": "moonraker-api-release",
   "version": "1.0.0",
-  "description": "![Python package](https://github.com/cmroche/greeclimate/workflows/Python%20package/badge.svg)",
+  "description": "![Python package](https://github.com/cmroche/moonraker_api/workflows/Python%20package/badge.svg)",
   "main": "index.js",
   "directories": {
     "test": "tests"
@@ -11,14 +11,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cmroche/greeclimate.git"
+    "url": "git+https://github.com/cmroche/moonraker-api.git"
   },
   "author": "Clifford Roche",
   "license": "GPL-3.0-or-later",
   "bugs": {
-    "url": "https://github.com/cmroche/greeclimate/issues"
+    "url": "https://github.com/cmroche/moonraker-api/issues"
   },
-  "homepage": "https://github.com/cmroche/greeclimate#readme",
+  "homepage": "https://github.com/cmroche/moonraker-api#readme",
   "dependencies": {
     "@semantic-release/changelog": "^6.0.3",
     "@semantic-release/commit-analyzer": "^13.0.0",
