@@ -5,9 +5,9 @@ name: Python package
 
 on:
   push:
-    branches: [master]
+    branches: [main]
   pull_request:
-    branches: [master]
+    branches: [main]
 
 jobs:
   build:
@@ -35,7 +35,7 @@ jobs:
           flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
       - name: Test with unittest
         run: |
-          pytest --cov-report=xml --cov=greeclimate tests/
+          pytest --cov-report=xml --cov=moonraker_api tests/
       - uses: codecov/codecov-action@v4
         with:
           file: ./coverage.xml
