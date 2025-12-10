@@ -76,7 +76,7 @@ class ClientNotAuthenticatedError(Exception):
 
 
 class WebsocketClient:
-    """Moonraker API client class, repesents an API instance
+    """Moonraker API client class, represents an API instance
 
     Attributes:
       host: hostname or IP address of the printer
