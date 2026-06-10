@@ -66,6 +66,7 @@ jobs:
         env:
           CI: true
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PIP_CONSTRAINT: .github/pypi-build-constraints.txt
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
           PYPI_USER: ${{ secrets.PYPI_USER }}
         run: npx semantic-release
