@@ -44,6 +44,7 @@ jobs:
   publish:
     needs: build
     name: Publish to Github & NPM or Github Package Registry
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
