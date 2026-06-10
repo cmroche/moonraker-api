@@ -7,7 +7,7 @@
 """Moonraker client API tests."""
 
 import asyncio
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import pytest
 from aiohttp import web
@@ -18,6 +18,7 @@ from moonraker_api.const import (
     WEBSOCKET_STATE_STOPPED,
     WEBSOCKET_STATE_STOPPING,
 )
+from moonraker_api.moonrakerclient import MoonrakerClient, MoonrakerListener
 from moonraker_api.websockets.websocketclient import (
     ClientAlreadyConnectedError,
     ClientNotAuthenticatedError,
@@ -34,6 +35,40 @@ from .data import (
     TEST_DATA_SIMPLE_RESPONSE,
     TEST_DATA_SUPPORTED_MODULES,
 )
+
+
+@pytest.mark.parametrize(
+    ("route_prefix", "expected_uri"),
+    [
+        (None, "ws://127.0.0.1:7125/websocket"),
+        ("", "ws://127.0.0.1:7125/websocket"),
+        ("/", "ws://127.0.0.1:7125/websocket"),
+        ("moonraker", "ws://127.0.0.1:7125/moonraker/websocket"),
+        ("/moonraker", "ws://127.0.0.1:7125/moonraker/websocket"),
+        ("moonraker/", "ws://127.0.0.1:7125/moonraker/websocket"),
+        ("/moonraker/", "ws://127.0.0.1:7125/moonraker/websocket"),
+        (
+            "moonraker/printer1",
+            "ws://127.0.0.1:7125/moonraker/printer1/websocket",
+        ),
+        (
+            "/moonraker/printer1/",
+            "ws://127.0.0.1:7125/moonraker/printer1/websocket",
+        ),
+    ],
+)
+async def test_build_websocket_uri_normalizes_route_prefix(route_prefix, expected_uri):
+    """Test websocket URI route prefix creation and slash normalization."""
+    listener = Mock(name="MoonrakeListener", spec=MoonrakerListener)
+    moonraker = MoonrakerClient(
+        host="127.0.0.1",
+        port=7125,
+        listener=listener,
+        route_prefix=route_prefix,
+        loop=asyncio.get_running_loop(),
+    )
+
+    assert moonraker._build_websocket_uri() == expected_uri
 
 
 async def test_connect(aiohttp_server, moonraker):

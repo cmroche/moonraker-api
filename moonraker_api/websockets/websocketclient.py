@@ -166,8 +166,9 @@ class WebsocketClient:
 
     def _build_websocket_uri(self) -> str:
         protocol = "wss://" if self.ssl else "ws://"
-        if self.route_prefix:
-            return f"{protocol}{self.host}:{self.port}/{self.route_prefix}/websocket"
+        route_prefix = self.route_prefix.strip("/") if self.route_prefix else None
+        if route_prefix:
+            return f"{protocol}{self.host}:{self.port}/{route_prefix}/websocket"
         return f"{protocol}{self.host}:{self.port}/websocket"
 
     def _get_next_tx_id(self) -> int:
