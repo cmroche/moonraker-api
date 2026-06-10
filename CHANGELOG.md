@@ -1,3 +1,10 @@
+## [3.0.1](https://github.com/cmroche/moonraker-api/compare/v3.0.0...v3.0.1) (2026-06-10)
+
+
+### Bug Fixes
+
+* constrain PyPI build metadata ([f774a27](https://github.com/cmroche/moonraker-api/commit/f774a27ff02e30ba5318158dcb26b614fb90ae66))
+
 # [3.0.0](https://github.com/cmroche/moonraker-api/compare/v2.0.6...v3.0.0) (2026-06-10)
 
 
