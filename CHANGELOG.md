@@ -1,3 +1,13 @@
+# [3.0.0](https://github.com/cmroche/moonraker-api/compare/v2.0.6...v3.0.0) (2026-06-10)
+
+
+* feat!: drop support for end-of-life Python versions ([ca54718](https://github.com/cmroche/moonraker-api/commit/ca54718e42e0e543441d720418d16d31b7e4af36))
+
+
+### BREAKING CHANGES
+
+* Package metadata now requires Python 3.10 or newer.
+
 ## [2.0.6](https://github.com/cmroche/moonraker-api/compare/v2.0.5...v2.0.6) (2024-08-11)
 
 
