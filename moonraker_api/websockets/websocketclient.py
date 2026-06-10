@@ -76,7 +76,7 @@ class ClientNotAuthenticatedError(Exception):
 
 
 class WebsocketClient:
-    """Moonraker API client class, repesents an API instance
+    """Moonraker API client class, represents an API instance
 
     Attributes:
       host: hostname or IP address of the printer
@@ -88,6 +88,7 @@ class WebsocketClient:
         listener: WebsocketStatusListener,
         host: str,
         port: int = 7125,
+        route_prefix: str | None = None,
         api_key: str | None = None,
         ssl: bool = False,
         loop: AbstractEventLoop = None,
@@ -100,6 +101,8 @@ class WebsocketClient:
             listener (MoonrakerListen): Event listener
             host (str): hostname or IP address of the printer
             port (int, optional): Defaults to 7125
+            route_prefix (str, optional):
+                Defaults to none, configure if set on moonraker
             api_key (str, options): API key
             loop (AbstractEventLoop, option):
                 Provide an optional asyncio loop for tasks
@@ -107,6 +110,7 @@ class WebsocketClient:
         self.listener = listener or WebsocketStatusListener()
         self.host = host
         self.port = port
+        self.route_prefix = route_prefix
         self.api_key = api_key
         self.ssl = ssl
         self._timeout = timeout
@@ -162,6 +166,9 @@ class WebsocketClient:
 
     def _build_websocket_uri(self) -> str:
         protocol = "wss://" if self.ssl else "ws://"
+        route_prefix = self.route_prefix.strip("/") if self.route_prefix else None
+        if route_prefix:
+            return f"{protocol}{self.host}:{self.port}/{route_prefix}/websocket"
         return f"{protocol}{self.host}:{self.port}/websocket"
 
     def _get_next_tx_id(self) -> int:

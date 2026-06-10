@@ -42,6 +42,7 @@ class MoonrakerClient(WebsocketClient):
         listener: MoonrakerListener,
         host: str,
         port: int = 7125,
+        route_prefix: str | None = None,
         api_key: str | None = None,
         ssl: bool = False,
         loop: AbstractEventLoop = None,
@@ -54,13 +55,15 @@ class MoonrakerClient(WebsocketClient):
             listener (MoonrakerListen): Event listener
             host (str): hostname or IP address of the printer
             port (int, optional): Defaults to 7125
+            route_prefix (str, optional):
+                Defaults to none, configure if set on moonraker
             api_key (str, optional): API key
             loop (AbstractEventLoop, option):
                 Provide an optional asyncio loop for tasks
             timeout (int, option): Timeout in seconds for websockets
         """
         WebsocketClient.__init__(
-            self, listener, host, port, api_key, ssl, loop, timeout, session
+            self, listener, host, port, route_prefix, api_key, ssl, loop, timeout, session
         )
 
     async def _loop_recv_internal(self, message: Any) -> None:
