@@ -1,3 +1,17 @@
+# [4.0.0](https://github.com/cmroche/moonraker-api/compare/v3.0.1...v4.0.0) (2026-06-10)
+
+
+* feat!: Add support for route_prefix ([fd4c30d](https://github.com/cmroche/moonraker-api/commit/fd4c30df169ba4d0b268ef3ac6d8654fad7c49fd))
+
+
+### BREAKING CHANGES
+
+* `route_prefix` changes the positional constructor signature.
+Use keyword arguments or update positional calls accordingly.
+
+Co-authored-by: wilmarguida <w.denouden@guida.nl>
+Signed-off-by: wilmarguida <w.denouden@guida.nl>
+
 ## [3.0.1](https://github.com/cmroche/moonraker-api/compare/v3.0.0...v3.0.1) (2026-06-10)
 
 
