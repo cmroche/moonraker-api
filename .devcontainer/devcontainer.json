@@ -5,8 +5,8 @@
 	"build": {
 		"dockerfile": "Dockerfile",
 		"context": "..",
-		// Update 'VARIANT' to pick a Python version. Rebuild the container 
-		// if it already exists to update. Available variants: 3, 3.6, 3.7, 3.8 
+		// Update 'VARIANT' to pick a supported Python version. Rebuild the container
+		// if it already exists to update.
 		"args": { "VARIANT": "3" }
 	},
 
