@@ -39,7 +39,7 @@ jobs:
       - name: Test with unittest
         run: |
           pytest --cov-report=xml --cov=moonraker_api tests/
-      - uses: codecov/codecov-action@v6
+      - uses: codecov/codecov-action@v7
         with:
           file: ./coverage.xml
         env:
