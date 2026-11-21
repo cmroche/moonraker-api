@@ -1,3 +1,10 @@
+## [4.0.1](https://github.com/cmroche/moonraker-api/compare/v4.0.0...v4.0.1) (2026-11-21)
+
+
+### Bug Fixes
+
+* preserve websocket request and session lifecycles ([#43](https://github.com/cmroche/moonraker-api/issues/43)) ([449f05e](https://github.com/cmroche/moonraker-api/commit/449f05e5c3c2d6dfedea03d88d5d32cfcfd60df8))
+
 # [4.0.0](https://github.com/cmroche/moonraker-api/compare/v3.0.1...v4.0.0) (2026-06-10)
 
 
