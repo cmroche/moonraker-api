@@ -8,20 +8,12 @@
 
 from __future__ import annotations
 
-import logging
-from asyncio.events import AbstractEventLoop
 from typing import Any, Literal
 
-import aiohttp
-from aiohttp.web_response import Response
-
-from moonraker_api.const import WEBSOCKET_CONNECTION_TIMEOUT
 from moonraker_api.websockets.websocketclient import (
     WebsocketClient,
     WebsocketStatusListener,
 )
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class MoonrakerListener(WebsocketStatusListener):
@@ -36,39 +28,6 @@ class MoonrakerClient(WebsocketClient):
       host: hostname or IP address of the printer
       port: Defaults to 7125
     """
-
-    def __init__(
-        self,
-        listener: MoonrakerListener,
-        host: str,
-        port: int = 7125,
-        route_prefix: str | None = None,
-        api_key: str | None = None,
-        ssl: bool = False,
-        loop: AbstractEventLoop = None,
-        timeout: int = WEBSOCKET_CONNECTION_TIMEOUT,
-        session: aiohttp.ClientSession = None,
-    ) -> None:
-        """Initialize the moonraker client object
-
-        Args:
-            listener (MoonrakerListen): Event listener
-            host (str): hostname or IP address of the printer
-            port (int, optional): Defaults to 7125
-            route_prefix (str, optional):
-                Defaults to none, configure if set on moonraker
-            api_key (str, optional): API key
-            loop (AbstractEventLoop, option):
-                Provide an optional asyncio loop for tasks
-            timeout (int, option): Timeout in seconds for websockets
-        """
-        WebsocketClient.__init__(
-            self, listener, host, port, route_prefix, api_key, ssl, loop, timeout, session
-        )
-
-    async def _loop_recv_internal(self, message: Any) -> None:
-        """Private method to allow processing if incoming messages"""
-        # Empty for the moment
 
     async def call_method(self, method: str, **kwargs: Any) -> Any:
         """Call a json-rpc method and wait for the response.

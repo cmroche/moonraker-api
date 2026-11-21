@@ -12,15 +12,6 @@ from pytest_aiohttp.plugin import aiohttp_server
 from tests.data import TEST_METHOD_RESPONSES
 
 
-async def create_moonraker_service(aiohttp_server, disconnect: bool = False):
-    """Create a fake websocket server to handle API requests
-
-    Args:
-        disconnect (bool, optional): Close the websocket immediately
-        instead of responding to the request
-    """
-
-
 async def create_moonraker_service_looping(
     aiohttp_server, disconnect: bool = False, no_response: bool = False
 ):

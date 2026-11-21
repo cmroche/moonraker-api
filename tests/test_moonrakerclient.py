@@ -7,10 +7,11 @@
 """Moonraker client API tests."""
 
 import asyncio
+from json import JSONDecodeError
 from unittest.mock import Mock, patch
 
 import pytest
-from aiohttp import web
+from aiohttp import ClientSession, ClientWebSocketResponse, web
 from aiohttp.client_exceptions import ClientConnectionError
 
 from moonraker_api.const import (
@@ -26,7 +27,6 @@ from moonraker_api.websockets.websocketclient import (
 )
 
 from .common import (
-    create_moonraker_service,
     create_moonraker_service_error,
     create_moonraker_service_looping,
 )
@@ -77,10 +77,12 @@ async def test_connect(aiohttp_server, moonraker):
 
     await moonraker.connect()
 
+    session = moonraker.session
     assert moonraker.is_connected
     assert moonraker.state == WEBSOCKET_STATE_CONNECTED
 
     await moonraker.disconnect()
+    assert session.closed
 
     assert not moonraker.is_connected
     assert moonraker.state in [WEBSOCKET_STATE_STOPPED, WEBSOCKET_STATE_STOPPING]
@@ -91,6 +93,17 @@ async def test_connect(aiohttp_server, moonraker):
     assert moonraker.listener.state_changed.call_args_list[1].args == ("ws_connected",)
     assert moonraker.listener.state_changed.call_args_list[2].args == ("ws_stopping",)
     assert moonraker.listener.state_changed.call_args_list[3].args == ("ws_stopped",)
+
+
+async def test_reconnect_with_shared_session(aiohttp_server):
+    await create_moonraker_service_looping(aiohttp_server)
+    async with ClientSession() as session:
+        client = MoonrakerClient(None, "127.0.0.1", session=session)
+        for _ in range(2):
+            await client.connect()
+            assert await client.get_klipper_status() == "ready"
+            await client.disconnect()
+            assert not session.closed
 
 
 async def test_connect_twice(aiohttp_server, moonraker):
@@ -117,7 +130,9 @@ async def test_connect_unauthorized(aiohttp_server, moonraker):
     assert not moonraker.is_connected
     assert moonraker.state == WEBSOCKET_STATE_STOPPING
 
+    session = moonraker.session
     await moonraker.disconnect()
+    assert session.closed
     assert not moonraker.is_connected
     assert moonraker.state == WEBSOCKET_STATE_STOPPED
 
@@ -127,7 +142,11 @@ async def test_api_request(aiohttp_server, moonraker):
     await create_moonraker_service_looping(aiohttp_server)
 
     await moonraker.connect()
-    await moonraker.get_host_info()
+    async with moonraker.request("printer.info") as first:
+        async with moonraker.request("server.info") as second:
+            assert second.req_id > first.req_id
+            assert (await second.get_result())["klippy_state"] == "ready"
+            assert "state_message" in await first.get_result()
     await moonraker.disconnect()
 
 
@@ -136,8 +155,14 @@ async def test_api_request_disconnect(aiohttp_server, moonraker):
     await create_moonraker_service_looping(aiohttp_server, disconnect=True)
 
     await moonraker.connect()
+    session = moonraker.session
     with pytest.raises(asyncio.CancelledError):
         await moonraker.get_host_info()
+    await moonraker.disconnect()
+    assert session.closed
+
+    await moonraker.connect()
+    assert await moonraker.get_klipper_status() == "ready"
     await moonraker.disconnect()
 
 
@@ -165,28 +190,48 @@ async def test_api_request_not_connected(aiohttp_server, moonraker):
     assert moonraker.listener.state_changed.call_count == 0
 
 
-@pytest.mark.skip(reason="Not possible to test yet")
 async def test_api_send_error(aiohttp_server, moonraker):
-    """Test handling error while sending requests"""
-    await create_moonraker_service(aiohttp_server)
-
-    with pytest.raises(ClientConnectionError):
-        await moonraker.get_host_info()
+    await create_moonraker_service_looping(aiohttp_server, no_response=True)
+    await moonraker.connect()
+    error = ClientConnectionError("connection lost")
+    async with moonraker.request("printer.info") as pending:
+        # A successful round trip ensures the earlier request was already sent.
+        assert await moonraker.get_klipper_status() == "ready"
+        with patch.object(ClientWebSocketResponse, "send_str", side_effect=error):
+            with pytest.raises(ClientConnectionError) as sending:
+                await moonraker.get_host_info()
+        with pytest.raises(ClientConnectionError) as waiting:
+            await pending.get_result()
     await moonraker.disconnect()
+    assert sending.value is waiting.value is error
+    moonraker.listener.on_exception.assert_awaited_once_with(error)
 
     assert not moonraker.is_connected
     assert moonraker.state == WEBSOCKET_STATE_STOPPED
 
 
-@pytest.mark.skip(reason="Not possible to test yet")
 async def test_api_recv_error(aiohttp_server, moonraker):
-    """Test handling error while receiving requests"""
-    await create_moonraker_service(aiohttp_server)
+    """A later reply succeeds even if the next frame fails an earlier request."""
+    async def handler(request):
+        ws = web.WebSocketResponse()
+        await ws.prepare(request)
+        await ws.receive_json()
+        second = await ws.receive_json()
+        await ws.send_json({"jsonrpc": "2.0", "id": second["id"], "result": "ok"})
+        await ws.send_str("not JSON")
+        return ws
 
-    with patch("AwaitableTask.get_result"):
-        with pytest.raises(ClientConnectionError):
-            await moonraker.get_host_info()
+    app = web.Application()
+    app.router.add_get("/websocket", handler)
+    await aiohttp_server(app, port=moonraker.port)
+    await moonraker.connect()
+    async with moonraker.request("printer.info") as first:
+        async with moonraker.request("server.info") as second:
+            assert await second.get_result() == "ok"
+            with pytest.raises(JSONDecodeError) as failure:
+                await first.get_result()
     await moonraker.disconnect()
+    moonraker.listener.on_exception.assert_awaited_once_with(failure.value)
 
     assert not moonraker.is_connected
     assert moonraker.state == WEBSOCKET_STATE_STOPPED

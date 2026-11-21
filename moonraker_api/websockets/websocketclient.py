@@ -14,7 +14,7 @@ from asyncio import Task
 from asyncio.events import AbstractEventLoop
 from asyncio.futures import Future
 from asyncio.tasks import FIRST_COMPLETED
-from random import randint
+from itertools import count
 from typing import Any, Coroutine
 
 import aiohttp
@@ -126,6 +126,7 @@ class WebsocketClient:
 
         self._runtask: Task = None
         self._requests_pending = asyncio.Queue()
+        self._request_ids = count(1)
         self._requests: dict[int, WebsocketRequest] = {}
 
     def _task_done_callback(self, task) -> None:
@@ -171,11 +172,8 @@ class WebsocketClient:
             return f"{protocol}{self.host}:{self.port}/{route_prefix}/websocket"
         return f"{protocol}{self.host}:{self.port}/websocket"
 
-    def _get_next_tx_id(self) -> int:
-        return randint(1, 999999)
-
     def _build_websocket_request(self, method: str, **kwargs: Any) -> tuple[int, Any]:
-        tx_id = self._get_next_tx_id()
+        tx_id = next(self._request_ids)
         req = {"jsonrpc": "2.0", "method": method, "id": tx_id}
         if kwargs:
             req["params"] = kwargs
@@ -267,21 +265,21 @@ class WebsocketClient:
         Args:
             conn_event (Event): This event is set once the connection is complete
         """
-        if not self.session:
-            self.session = ClientSession(loop=self._loop)
-
         async def set_exception(exception: BaseException) -> None:
             """Sets an exception received by the run loop"""
             if not conn_event.done():
                 conn_event.set_exception(exception)
             for req in self._requests.values():
-                if not req.done():
+                if not req.done:
                     req.set_exception(exception)
             await self._create_task(self.listener.on_exception(exception))
 
         if self.state != WEBSOCKET_STATE_STOPPED:
             self.state = WEBSOCKET_STATE_CONNECTING
+            owns_session = self.session is None
             try:
+                if owns_session:
+                    self.session = ClientSession(loop=self._loop)
                 headers = None
                 if self.api_key:
                     headers = [("X-Api-Key", self.api_key)]
@@ -336,6 +334,9 @@ class WebsocketClient:
                     self._requests_pending.task_done()
                 for req in self._requests.values():
                     req.cancel()
+                if owns_session and self.session is not None:
+                    await self.session.close()
+                    self.session = None
                 self.state = WEBSOCKET_STATE_STOPPED
 
     async def connect(self) -> bool:
