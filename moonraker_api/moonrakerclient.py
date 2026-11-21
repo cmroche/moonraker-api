@@ -56,6 +56,24 @@ class MoonrakerClient(WebsocketClient):
             return response["objects"]
         return None
 
+    async def get_temperature_sensors(self) -> list[str] | None:
+        """Get registered thermal object names after Klipper is ready.
+
+        Return [] when no sources are registered, or None when the RPC reply
+        has no status result.
+        """
+        response = await self.call_method(
+            "printer.objects.query",
+            objects={"heaters": ["available_sensors", "available_monitors"]},
+        )
+        if "status" not in response:
+            return None
+
+        heaters = response["status"].get("heaters", {})
+        sensors = heaters.get("available_sensors", [])
+        monitors = heaters.get("available_monitors") or []
+        return list(dict.fromkeys([*sensors, *monitors]))
+
     async def get_klipper_status(self) -> Literal["ready", "shutdown", "disconnected"]:
         """Returns the current status of klipper."""
         info = await self.call_method("server.info")
