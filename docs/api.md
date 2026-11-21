@@ -118,25 +118,87 @@ A reply arriving while the cancelled request is still registered can cause an
 `InvalidStateError` and close the websocket. Prefer `call_method` unless direct
 access to the request is needed.
 
-### Convenience methods
+## Client convenience methods
 
-These async methods use the same request and error behavior as `call_method`:
+Run these examples inside an async function with a connected `client`. These
+methods share the connection, timeout, and cancellation behavior described in
+[`call_method`](#await-clientcall_methodmethod-kwargs).
 
-| Method | Moonraker method | Return value |
-| --- | --- | --- |
-| `get_host_info()` | `printer.info` | Printer information result, or an RPC error mapping. |
-| `get_server_info()` | `server.info` | Moonraker server information result, or an RPC error mapping. |
-| `get_supported_modules()` | `printer.objects.list` | The result's `objects` list, or `None` if `objects` is absent. |
-| `get_klipper_status()` | `server.info` | The result's `klippy_state` value. If absent, raises `KeyError`, including on an RPC error reply. |
-| `get_websocket_id()` | `server.websocket.id` | Mapping containing `websocket_id`, or an RPC error mapping. |
+### `MoonrakerClient.get_host_info()`
 
-`get_klipper_status()` returns the server value unchanged: `disconnected`,
-`startup`, `ready`, `error`, or `shutdown`. Its current type annotation omits
-`startup` and `error`.
+Returns the `printer.info` result, containing Klipper host information such as
+its current state and hostname. An RPC error is returned as an `error` mapping.
 
-Moonraker deprecates `server.websocket.id` in favor of
-[`server.connection.identify`](https://moonraker.readthedocs.io/en/latest/external_api/server/#identify-connection),
+```python
+info = await client.get_host_info()
+if "error" in info:
+    print("Printer info unavailable:", info["error"])
+else:
+    print("Klipper state:", info["state"])
+    print("Printer hostname:", info["hostname"])
+```
+
+### `MoonrakerClient.get_server_info()`
+
+Returns the `server.info` result, containing Moonraker server information and
+Klipper's connection state. An RPC error is returned as an `error` mapping.
+
+```python
+info = await client.get_server_info()
+if "error" in info:
+    print("Server info unavailable:", info["error"])
+else:
+    print("Klipper state:", info["klippy_state"])
+    print("Moonraker version:", info["moonraker_version"])
+```
+
+### `MoonrakerClient.get_supported_modules()`
+
+Returns the `objects` list from `printer.objects.list`, containing full
+Klipper object names. Returns `None` when the reply has no `objects` field,
+including an RPC error. Query after Klipper is ready.
+
+```python
+objects = await client.get_supported_modules()
+if objects is None:
+    print("Printer object list unavailable")
+else:
+    for name in objects:
+        print(name)  # For example, "extruder" or "temperature_sensor chamber"
+```
+
+### `MoonrakerClient.get_klipper_status()`
+
+Returns `klippy_state` from `server.info`. Moonraker may return `disconnected`,
+`startup`, `ready`, `error`, or `shutdown`; the current Python type annotation
+omits `startup` and `error`. Raises `KeyError` if `klippy_state` is absent,
+including when the RPC returns an error mapping.
+
+```python
+try:
+    state = await client.get_klipper_status()
+except KeyError:
+    print("Klipper state unavailable")
+else:
+    print("Klipper state:", state)
+    if state == "ready":
+        print("Klipper is ready for printer object requests")
+```
+
+### `MoonrakerClient.get_websocket_id()`
+
+Returns the `server.websocket.id` result, a mapping containing the integer
+`websocket_id`, or an RPC error mapping. Moonraker deprecates this endpoint in
+favor of [`server.connection.identify`](https://moonraker.readthedocs.io/en/latest/external_api/server/#identify-connection),
 whose result includes `connection_id`.
+
+```python
+result = await client.get_websocket_id()
+if "error" in result:
+    print("Websocket ID unavailable:", result["error"])
+else:
+    print("Websocket ID:", result["websocket_id"])
+```
 
 ## Notifications
 
