@@ -3,6 +3,7 @@
 # Copyright (C) 2021 Clifford Roche <clifford.roche@gmail.com>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license
+import asyncio
 from unittest.mock import Mock
 
 import pytest
@@ -21,8 +22,10 @@ from moonraker_api.moonrakerclient import MoonrakerClient, MoonrakerListener
 
 
 @pytest.fixture(name="moonraker")
-def moonraker_client():
+async def moonraker_client():
     """Create a simple api client for testing"""
     h = Mock(name="MoonrakeListener", spec=MoonrakerListener)
-    c = MoonrakerClient(host="127.0.0.1", port=7125, listener=h, timeout=2)
-    return c
+    return MoonrakerClient(
+        host="127.0.0.1", port=7125, listener=h, timeout=2,
+        loop=asyncio.get_running_loop(),
+    )

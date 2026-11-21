@@ -248,6 +248,87 @@ async def test_support_modules(aiohttp_server, moonraker):
     assert supported_modules == TEST_DATA_SUPPORTED_MODULES["result"]["objects"]
 
 
+async def test_temperature_sensors_live_updates(aiohttp_server, moonraker):
+    chamber = "temperature_sensor chamber_top"
+    monitor = "tmc2240 stepper_x"
+    status = {
+        "print_stats": {"state": "printing"},
+        "extruder": {"target": 210.0, "temperature": 209.5},
+        "heater_bed": {"temperature": 60.0},
+        chamber: {"temperature": 62.1},
+        monitor: {"temperature": None},
+    }
+    delta = [{chamber: {"temperature": 0.0}}, 123.0]
+
+    async def handler(request):
+        ws = web.WebSocketResponse()
+        await ws.prepare(request)
+        discovery = await ws.receive_json()
+        assert discovery["method"] == "printer.objects.query"
+        assert discovery["params"] == {
+            "objects": {"heaters": ["available_sensors", "available_monitors"]},
+        }
+        await ws.send_json({
+            "jsonrpc": "2.0",
+            "id": discovery["id"],
+            "result": {"status": {"heaters": {
+                "available_sensors": ["extruder", "heater_bed", chamber],
+                "available_monitors": [monitor, "extruder"],
+            }}},
+        })
+        subscription = await ws.receive_json()
+        assert subscription["method"] == "printer.objects.subscribe"
+        assert subscription["params"] == {"objects": {
+            "print_stats": None,
+            "extruder": ["target", "temperature"],
+            "heater_bed": ["temperature"],
+            chamber: ["temperature"],
+            monitor: ["temperature"],
+        }}
+        await ws.send_json({
+            "jsonrpc": "2.0", "id": subscription["id"], "result": {"status": status},
+        })
+        await ws.send_json({
+            "jsonrpc": "2.0", "method": "notify_status_update", "params": delta,
+        })
+        await ws.receive()  # Keep the connection open until the client disconnects.
+        return ws
+
+    notified = asyncio.Event()
+    moonraker.listener.on_notification.side_effect = lambda *_: notified.set()
+    app = web.Application()
+    app.router.add_get("/websocket", handler)
+    server = await aiohttp_server(app)
+    moonraker.port = server.port
+    await moonraker.connect()
+    try:
+        names = await moonraker.get_temperature_sensors()
+        assert names == ["extruder", "heater_bed", chamber, monitor]
+        objects = {"print_stats": None, "extruder": ["target"]}
+        for name in names:
+            objects.setdefault(name, []).append("temperature")
+        response = await moonraker.call_method("printer.objects.subscribe", objects=objects)
+        assert {name: response["status"][name]["temperature"] for name in names} == {
+            "extruder": 209.5, "heater_bed": 60.0, chamber: 62.1, monitor: None,
+        }
+        await asyncio.wait_for(notified.wait(), timeout=2)
+        moonraker.listener.on_notification.assert_awaited_once_with("notify_status_update", delta)
+    finally:
+        await moonraker.disconnect()
+
+
+@pytest.mark.parametrize(("response", "expected"), [
+    ({"status": {"heaters": {"available_sensors": ["extruder"]}}}, ["extruder"]),
+    ({"status": {"heaters": {"available_monitors": None}}}, []),
+    ({"status": {}}, []),
+    ({"status": {"heaters": {"available_sensors": [], "available_monitors": []}}}, []),
+    ({"error": {"code": -32601, "message": "Klipper unavailable"}}, None),
+])
+async def test_temperature_sensors_discovery_results(moonraker, response, expected):
+    with patch.object(moonraker, "call_method", return_value=response):
+        assert await moonraker.get_temperature_sensors() == expected
+
+
 async def test_service_status(aiohttp_server, moonraker):
     """Test getting the supported modules from the API"""
     await create_moonraker_service_looping(aiohttp_server)
