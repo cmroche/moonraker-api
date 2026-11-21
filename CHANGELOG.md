@@ -1,3 +1,10 @@
+# [4.1.0](https://github.com/cmroche/moonraker-api/compare/v4.0.1...v4.1.0) (2026-11-21)
+
+
+### Features
+
+* discover registered temperature sensors ([#44](https://github.com/cmroche/moonraker-api/issues/44)) ([6b387c7](https://github.com/cmroche/moonraker-api/commit/6b387c7496e3433833b47547aca79ae5e9584973))
+
 ## [4.0.1](https://github.com/cmroche/moonraker-api/compare/v4.0.0...v4.0.1) (2026-11-21)
 
 
